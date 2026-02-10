@@ -1,0 +1,43 @@
+"""Public type re-exports for the Knowhere SDK."""
+
+from __future__ import annotations
+
+from knowhere.types.job import Job, JobError, JobResult
+from knowhere.types.params import ParsingParams, WebhookConfig
+from knowhere.types.result import (
+    BaseChunk,
+    Checksum,
+    Chunk,
+    FileIndex,
+    ImageChunk,
+    ImageFileInfo,
+    Manifest,
+    ParseResult,
+    Statistics,
+    TableChunk,
+    TableFileInfo,
+    TextChunk,
+)
+
+__all__: list[str] = [
+    # job
+    "Job",
+    "JobError",
+    "JobResult",
+    # params
+    "ParsingParams",
+    "WebhookConfig",
+    # result
+    "BaseChunk",
+    "Checksum",
+    "Chunk",
+    "FileIndex",
+    "ImageChunk",
+    "ImageFileInfo",
+    "Manifest",
+    "ParseResult",
+    "Statistics",
+    "TableChunk",
+    "TableFileInfo",
+    "TextChunk",
+]
