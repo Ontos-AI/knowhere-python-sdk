@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 import pytest
@@ -11,6 +11,8 @@ import respx
 from knowhere._exceptions import (
     AuthenticationError,
     BadRequestError,
+    ConflictError,
+    InternalServerError,
     RateLimitError,
     ServiceUnavailableError,
 )
@@ -29,16 +31,20 @@ DONE_RESPONSE: Dict[str, Any] = {
 }
 
 
-def _error_body(code: str, message: str) -> Dict[str, Any]:
+def _error_body(
+    code: str,
+    message: str,
+    details: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """Build an error response body."""
-    return {
-        "success": False,
-        "error": {
-            "code": code,
-            "message": message,
-            "request_id": "req_retry",
-        },
+    error: Dict[str, Any] = {
+        "code": code,
+        "message": message,
+        "request_id": "req_retry",
     }
+    if details is not None:
+        error["details"] = details
+    return {"success": False, "error": error}
 
 
 # ---------------------------------------------------------------------------
@@ -96,49 +102,26 @@ class TestRetry504:
 
 
 # ---------------------------------------------------------------------------
-# 429 with retry_after triggers retry
+# 429 with retry_after in body details triggers retry
 # ---------------------------------------------------------------------------
 
 
 class TestRetry429WithRetryAfter:
-    """Verify 429 with retry-after header triggers retry."""
+    """Verify 429 with details.retry_after triggers retry."""
 
     @respx.mock
-    def test_429_with_retry_after_retries(self, sync_client: Any) -> None:
-        route = respx.get(GET_URL).mock(
-            side_effect=[
-                httpx.Response(
-                    429,
-                    json=_error_body("RESOURCE_EXHAUSTED", "Rate limited"),
-                    headers={"retry-after": "0"},
-                ),
-                httpx.Response(200, json=DONE_RESPONSE),
-            ]
-        )
-
-        result = sync_client.jobs.get(JOB_ID)
-
-        assert result.status == "done"
-        assert route.call_count == 2
-
-
-# ---------------------------------------------------------------------------
-# 429 without retry_after also retries (429 is in _RETRYABLE_STATUS_CODES)
-# ---------------------------------------------------------------------------
-
-
-class TestRetry429WithoutRetryAfter:
-    """Verify 429 without retry-after still retries (status is retryable)."""
-
-    @respx.mock
-    def test_429_without_retry_after_still_retries(
+    def test_429_with_retry_after_in_body_retries(
         self, sync_client: Any
     ) -> None:
         route = respx.get(GET_URL).mock(
             side_effect=[
                 httpx.Response(
                     429,
-                    json=_error_body("RESOURCE_EXHAUSTED", "Quota exceeded"),
+                    json=_error_body(
+                        "RESOURCE_EXHAUSTED",
+                        "Rate limited",
+                        details={"retry_after": 0},
+                    ),
                 ),
                 httpx.Response(200, json=DONE_RESPONSE),
             ]
@@ -148,6 +131,33 @@ class TestRetry429WithoutRetryAfter:
 
         assert result.status == "done"
         assert route.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# 429 without retry_after does NOT retry (quota exceeded)
+# ---------------------------------------------------------------------------
+
+
+class TestNoRetry429WithoutRetryAfter:
+    """Verify 429 without retry_after does NOT retry (quota exceeded)."""
+
+    @respx.mock
+    def test_429_without_retry_after_does_not_retry(
+        self, sync_client: Any
+    ) -> None:
+        route = respx.get(GET_URL).mock(
+            return_value=httpx.Response(
+                429,
+                json=_error_body(
+                    "RESOURCE_EXHAUSTED", "Quota exceeded"
+                ),
+            )
+        )
+
+        with pytest.raises(RateLimitError):
+            sync_client.jobs.get(JOB_ID)
+
+        assert route.call_count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -240,6 +250,81 @@ class TestRetryConnectionError:
         route = respx.get(GET_URL).mock(
             side_effect=[
                 httpx.ConnectError("Connection refused"),
+                httpx.Response(200, json=DONE_RESPONSE),
+            ]
+        )
+
+        result = sync_client.jobs.get(JOB_ID)
+
+        assert result.status == "done"
+        assert route.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# 409 (ABORTED) triggers retry
+# ---------------------------------------------------------------------------
+
+
+class TestRetry409:
+    """Verify 409 ABORTED responses trigger automatic retry."""
+
+    @respx.mock
+    def test_409_triggers_retry(self, sync_client: Any) -> None:
+        route = respx.get(GET_URL).mock(
+            side_effect=[
+                httpx.Response(
+                    409,
+                    json=_error_body("ABORTED", "Concurrency conflict"),
+                ),
+                httpx.Response(200, json=DONE_RESPONSE),
+            ]
+        )
+
+        result = sync_client.jobs.get(JOB_ID)
+
+        assert result.status == "done"
+        assert route.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# 500 does NOT retry
+# ---------------------------------------------------------------------------
+
+
+class TestNoRetry500:
+    """Verify 500 INTERNAL_ERROR responses are NOT retried."""
+
+    @respx.mock
+    def test_500_does_not_retry(self, sync_client: Any) -> None:
+        route = respx.get(GET_URL).mock(
+            return_value=httpx.Response(
+                500,
+                json=_error_body("INTERNAL_ERROR", "Internal server error"),
+            )
+        )
+
+        with pytest.raises(InternalServerError):
+            sync_client.jobs.get(JOB_ID)
+
+        assert route.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# 502 triggers retry (maps to UNAVAILABLE)
+# ---------------------------------------------------------------------------
+
+
+class TestRetry502:
+    """Verify 502 responses trigger automatic retry."""
+
+    @respx.mock
+    def test_502_triggers_retry(self, sync_client: Any) -> None:
+        route = respx.get(GET_URL).mock(
+            side_effect=[
+                httpx.Response(
+                    502,
+                    json=_error_body("UNAVAILABLE", "Bad gateway"),
+                ),
                 httpx.Response(200, json=DONE_RESPONSE),
             ]
         )

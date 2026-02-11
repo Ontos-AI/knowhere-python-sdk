@@ -11,7 +11,7 @@ import httpx
 import pytest
 import respx
 
-from knowhere._exceptions import KnowhereError
+from knowhere._exceptions import APIConnectionError, KnowhereError
 from knowhere.types.job import Job
 
 
@@ -191,3 +191,63 @@ class TestUploadWithUrlString:
         sync_client.jobs.upload(UPLOAD_URL, b"content via url string")
 
         assert route.called
+
+
+# ---------------------------------------------------------------------------
+# Upload retry on transient storage errors
+# ---------------------------------------------------------------------------
+
+
+class TestUploadRetry503:
+    """Verify upload retries on 503 from storage provider."""
+
+    @respx.mock
+    def test_503_triggers_upload_retry(self, sync_client: Any) -> None:
+        route = respx.put(UPLOAD_URL).mock(
+            side_effect=[
+                httpx.Response(503),
+                httpx.Response(200),
+            ]
+        )
+
+        job: Job = _make_job_with_upload_url(UPLOAD_URL)
+        sync_client.jobs.upload(job, b"retry content")
+
+        assert route.call_count == 2
+
+
+class TestUploadRetryConnectionError:
+    """Verify upload retries on connection errors."""
+
+    @respx.mock
+    def test_connection_error_triggers_upload_retry(
+        self, sync_client: Any
+    ) -> None:
+        route = respx.put(UPLOAD_URL).mock(
+            side_effect=[
+                httpx.ConnectError("Connection refused"),
+                httpx.Response(200),
+            ]
+        )
+
+        job: Job = _make_job_with_upload_url(UPLOAD_URL)
+        sync_client.jobs.upload(job, b"retry content")
+
+        assert route.call_count == 2
+
+
+class TestUploadNoRetry403:
+    """Verify upload does NOT retry on 403 (expired pre-signed URL)."""
+
+    @respx.mock
+    def test_403_does_not_retry(self, sync_client: Any) -> None:
+        route = respx.put(UPLOAD_URL).mock(
+            return_value=httpx.Response(403)
+        )
+
+        job: Job = _make_job_with_upload_url(UPLOAD_URL)
+
+        with pytest.raises(APIConnectionError):
+            sync_client.jobs.upload(job, b"should not retry")
+
+        assert route.call_count == 1

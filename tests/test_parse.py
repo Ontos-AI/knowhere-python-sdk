@@ -8,6 +8,8 @@ from typing import Any, Dict
 
 import httpx
 import pytest
+
+from knowhere._exceptions import ValidationError
 import respx
 
 from tests.conftest import BASE_URL
@@ -219,13 +221,13 @@ class TestParseValidation:
     def test_missing_url_and_file_raises_value_error(
         self, sync_client: Any
     ) -> None:
-        with pytest.raises(ValueError, match="url.*file|file.*url"):
+        with pytest.raises(ValidationError, match="url.*file|file.*url"):
             sync_client.parse()
 
     def test_both_url_and_file_raises_value_error(
         self, sync_client: Any
     ) -> None:
-        with pytest.raises(ValueError, match="url.*file|file.*url"):
+        with pytest.raises(ValidationError, match="url.*file|file.*url"):
             sync_client.parse(
                 url="https://example.com/doc.pdf",
                 file=b"content",

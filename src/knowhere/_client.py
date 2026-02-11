@@ -13,6 +13,7 @@ from typing import BinaryIO, Optional, Union, overload
 
 from knowhere._base_client import AsyncAPIClient, SyncAPIClient
 from knowhere._constants import DEFAULT_POLL_INTERVAL, DEFAULT_POLL_TIMEOUT
+from knowhere._exceptions import ValidationError
 from knowhere._logging import getLogger
 from knowhere._types import (
     PollProgressCallback,
@@ -94,9 +95,9 @@ class Knowhere(SyncAPIClient):
         Provide exactly one of *url* or *file*.
         """
         if url and file:
-            raise ValueError("Provide either 'url' or 'file', not both.")
+            raise ValidationError("Provide either 'url' or 'file', not both.")
         if not url and file is None:
-            raise ValueError("Provide either 'url' or 'file'.")
+            raise ValidationError("Provide either 'url' or 'file'.")
 
         # Determine source type and create job
         if url:
@@ -196,9 +197,9 @@ class AsyncKnowhere(AsyncAPIClient):
     ) -> ParseResult:
         """Parse a document end-to-end (async version)."""
         if url and file:
-            raise ValueError("Provide either 'url' or 'file', not both.")
+            raise ValidationError("Provide either 'url' or 'file', not both.")
         if not url and file is None:
-            raise ValueError("Provide either 'url' or 'file'.")
+            raise ValidationError("Provide either 'url' or 'file'.")
 
         if url:
             job: Job = await self.jobs.create(
