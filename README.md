@@ -1,37 +1,40 @@
 # Knowhere Python SDK
 
+[![PyPI version](https://img.shields.io/pypi/v/knowhere-python-sdk.svg)](https://pypi.org/project/knowhere-python-sdk/)
+
 Official Python SDK for the [Knowhere](https://knowhereto.ai) document parsing API.
 
 ## Installation
 
-```bash
+```sh
 pip install knowhere-python-sdk
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
-```bash
+```sh
 uv add knowhere-python-sdk
 ```
 
-## Quick Start
+## Usage
 
 ```python
 import knowhere
 
 client = knowhere.Knowhere(api_key="sk_...")
 
-# Parse a document from URL
 result = client.parse(url="https://example.com/report.pdf")
 
-print(result.statistics.total_chunks)  # 152
-print(result.full_markdown[:200])      # First 200 chars of full markdown
+print(result.statistics.total_chunks)
+print(result.full_markdown[:200])
 
 for chunk in result.text_chunks:
     print(chunk.content[:80])
 ```
 
-### Parse a Local File
+While you can provide an `api_key` keyword argument, we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/) to add `KNOWHERE_API_KEY="sk_..."` to your `.env` file so that your API key is not stored in source control.
+
+### Parse a local file
 
 ```python
 from pathlib import Path
@@ -45,7 +48,7 @@ print(result.manifest.source_file_name)  # "report.pdf"
 print(len(result.chunks))                # 152
 ```
 
-### Access Different Chunk Types
+### Access different chunk types
 
 ```python
 result = client.parse(url="https://example.com/report.pdf")
@@ -67,14 +70,14 @@ for chunk in result.table_chunks:
     print(chunk.html[:100])
 ```
 
-### Save All Results to Disk
+### Save all results to disk
 
 ```python
 result = client.parse(file=Path("report.pdf"))
 result.save("./output/report/")
 ```
 
-## Async Usage
+## Async usage
 
 ```python
 import asyncio
@@ -91,7 +94,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Step-by-Step Control
+## Step-by-step control
 
 For granular control over the parsing workflow, use the `jobs` resource directly:
 
@@ -114,6 +117,22 @@ job_result = client.jobs.wait(job.job_id, poll_interval=10.0, poll_timeout=1800.
 # Step 4: Download and parse results
 result = client.jobs.load(job_result)
 print(result.statistics)
+```
+
+## Handling errors
+
+All errors inherit from `knowhere.KnowhereError`.
+
+
+```python
+import knowhere
+
+try:
+    result = client.parse(url="https://example.com/report.pdf")
+except knowhere.AuthenticationError:
+    print("Invalid API key")
+except knowhere.APIStatusError as e:
+    print(f"{e.status_code}: {e.message}")
 ```
 
 ## Configuration
@@ -140,49 +159,29 @@ client = knowhere.Knowhere(
 )
 ```
 
-### Context Manager
+### Retries
+
+Connection errors, 429 Rate Limit, and >=500 Internal errors are automatically retried with exponential backoff.
 
 ```python
-# Sync — ensures httpx.Client is properly closed
-with knowhere.Knowhere(api_key="sk_...") as client:
-    result = client.parse(url="https://example.com/report.pdf")
-
-# Async — ensures httpx.AsyncClient is properly closed
-async with knowhere.AsyncKnowhere(api_key="sk_...") as client:
-    result = await client.parse(url="https://example.com/report.pdf")
-```
-
-## Error Handling
-
-```python
-from knowhere import (
-    Knowhere,
-    AuthenticationError,
-    NotFoundError,
-    RateLimitError,
-    BadRequestError,
-    APIStatusError,
-    PollingTimeoutError,
+client = knowhere.Knowhere(
+    api_key="sk_...",
+    max_retries=3,  # default is 5
 )
-
-try:
-    result = client.parse(url="https://example.com/report.pdf")
-except BadRequestError as e:
-    print(e.status_code)   # 400
-    print(e.code)          # "INVALID_ARGUMENT"
-    print(e.message)       # "Unsupported file format"
-    print(e.request_id)    # "req_abc123"
-except NotFoundError as e:
-    print(e.message)       # "Job not found"
-except RateLimitError as e:
-    print(e.retry_after)   # seconds to wait
-except AuthenticationError:
-    print("Invalid API key")
-except PollingTimeoutError:
-    print("Job did not complete within timeout")
-except APIStatusError as e:
-    print(f"API error {e.status_code}: {e.message}")
 ```
+
+### Determining the installed version
+
+```python
+import knowhere
+print(knowhere.__version__)
+```
+
+## Versioning
+
+This package follows [Semantic Versioning](https://semver.org/).
+
+We publish stable releases to [PyPI](https://pypi.org/project/knowhere-python-sdk/). To install the latest unreleased changes directly from the repository: https://github.com/Ontos-AI/knowhere-python-sdk
 
 ## Requirements
 
@@ -190,92 +189,6 @@ except APIStatusError as e:
 - [httpx](https://www.python-httpx.org/) `>=0.25.0,<1.0`
 - [pydantic](https://docs.pydantic.dev/) `>=2.0.0,<3.0`
 - [typing-extensions](https://pypi.org/project/typing-extensions/) `>=4.7.0`
-
-## Building from Source
-
-### Prerequisites
-
-- Python 3.9 or later
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
-
-### Build
-
-```bash
-git clone https://github.com/Ontos-AI/knowhere-python-sdk.git
-cd knowhere-python-sdk
-
-# Install uv if you don't have it
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Build sdist + wheel
-uv build
-
-# Install the built wheel
-pip install dist/knowhere_python_sdk-*.whl
-```
-
-## Development
-
-### Setup
-
-```bash
-git clone https://github.com/Ontos-AI/knowhere-python-sdk.git
-cd knowhere-python-sdk
-
-# Create venv and install all dependencies (including dev)
-uv sync --all-extras
-```
-
-### Running Tests
-
-```bash
-# Run all unit tests
-uv run pytest tests/ -v
-
-# Run with coverage
-uv run coverage run -m pytest tests/ -v
-uv run coverage report -m
-```
-
-### Linting and Type Checking
-
-```bash
-# Lint
-uv run ruff check src/
-
-# Type check
-uv run mypy src/knowhere/
-```
-
-### Project Structure
-
-```
-knowhere-python-sdk/
-├── src/knowhere/
-│   ├── __init__.py              # Public API surface
-│   ├── _client.py               # Knowhere + AsyncKnowhere clients
-│   ├── _base_client.py          # HTTP logic, retry, error parsing
-│   ├── _exceptions.py           # Exception hierarchy
-│   ├── _constants.py            # Default URLs, timeouts, env var names
-│   ├── _types.py                # Sentinel types, callback type aliases
-│   ├── _logging.py              # Logger setup, header redaction
-│   ├── _response.py             # APIResponse wrapper
-│   ├── _version.py              # __version__
-│   ├── py.typed                 # PEP 561 marker
-│   ├── types/
-│   │   ├── job.py               # Job, JobResult, JobError
-│   │   ├── result.py            # ParseResult, Manifest, Chunk types
-│   │   └── params.py            # ParsingParams, WebhookConfig
-│   ├── resources/
-│   │   └── jobs.py              # Jobs + AsyncJobs resource
-│   └── lib/
-│       ├── polling.py           # Adaptive polling loop
-│       ├── upload.py            # Streaming file upload
-│       └── result_parser.py     # ZIP parsing, checksum verification
-├── tests/                       # Unit tests (respx-mocked HTTP)
-├── examples/                    # Usage examples
-└── pyproject.toml
-```
 
 ## License
 
