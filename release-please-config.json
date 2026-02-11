@@ -6,7 +6,7 @@
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
   "pull-request-title-pattern": "release: ${version}",
-  "pull-request-header": ":rocket: Release `${version}` is ready for review.\n\nMerge this PR to publish to PyPI.",
+  "pull-request-header": "Merge this PR to publish to PyPI.",
   "packages": {
     ".": {}
   },
