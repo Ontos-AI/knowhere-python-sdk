@@ -18,6 +18,7 @@ DEFAULT_POLL_INTERVAL: float = 10.0
 
 # Retry configuration
 DEFAULT_MAX_RETRIES: int = 5
+DEFAULT_UPLOAD_MAX_RETRIES: int = 2
 
 # Polling configuration
 MAX_POLL_INTERVAL: float = 30.0

@@ -42,6 +42,19 @@ class APITimeoutError(APIConnectionError):
 
 
 # ---------------------------------------------------------------------------
+# Validation / state
+# ---------------------------------------------------------------------------
+
+
+class ValidationError(KnowhereError):
+    """Raised when the caller provides invalid arguments."""
+
+
+class InvalidStateError(KnowhereError):
+    """Raised when an object is in an unexpected state for the operation."""
+
+
+# ---------------------------------------------------------------------------
 # Polling / job errors
 # ---------------------------------------------------------------------------
 
@@ -161,9 +174,17 @@ class ConflictError(APIStatusError):
 
 
 class RateLimitError(APIStatusError):
-    """HTTP 429 — includes optional ``retry_after`` hint."""
+    """HTTP 429 — includes optional rate limit hints from the server.
+
+    Attributes:
+        retry_after: Seconds to wait before retrying (``None`` for quota exceeded).
+        limit: Maximum allowed requests in the rate window.
+        period: Rate window unit (``"second"``, ``"minute"``, ``"hour"``, ``"day"``).
+    """
 
     retry_after: Optional[float]
+    limit: Optional[int]
+    period: Optional[str]
 
     def __init__(
         self,
@@ -176,6 +197,8 @@ class RateLimitError(APIStatusError):
         body: Optional[Any] = None,
         response: httpx.Response,
         retry_after: Optional[float] = None,
+        limit: Optional[int] = None,
+        period: Optional[str] = None,
     ) -> None:
         super().__init__(
             status_code,
@@ -187,6 +210,8 @@ class RateLimitError(APIStatusError):
             response=response,
         )
         self.retry_after = retry_after
+        self.limit = limit
+        self.period = period
 
 
 class InternalServerError(APIStatusError):
@@ -194,9 +219,17 @@ class InternalServerError(APIStatusError):
 
 
 class ServiceUnavailableError(APIStatusError):
-    """HTTP 502 / 503 — includes optional ``retry_after`` hint."""
+    """HTTP 502 / 503 — includes optional rate limit hints from the server.
+
+    Attributes:
+        retry_after: Seconds to wait before retrying.
+        limit: Maximum allowed requests in the rate window (optional).
+        period: Rate window unit (optional).
+    """
 
     retry_after: Optional[float]
+    limit: Optional[int]
+    period: Optional[str]
 
     def __init__(
         self,
@@ -209,6 +242,8 @@ class ServiceUnavailableError(APIStatusError):
         body: Optional[Any] = None,
         response: httpx.Response,
         retry_after: Optional[float] = None,
+        limit: Optional[int] = None,
+        period: Optional[str] = None,
     ) -> None:
         super().__init__(
             status_code,
@@ -220,12 +255,22 @@ class ServiceUnavailableError(APIStatusError):
             response=response,
         )
         self.retry_after = retry_after
+        self.limit = limit
+        self.period = period
 
 
 class GatewayTimeoutError(APIStatusError):
-    """HTTP 504 — includes optional ``retry_after`` hint."""
+    """HTTP 504 — includes optional rate limit hints from the server.
+
+    Attributes:
+        retry_after: Seconds to wait before retrying.
+        limit: Maximum allowed requests in the rate window (optional).
+        period: Rate window unit (optional).
+    """
 
     retry_after: Optional[float]
+    limit: Optional[int]
+    period: Optional[str]
 
     def __init__(
         self,
@@ -238,6 +283,8 @@ class GatewayTimeoutError(APIStatusError):
         body: Optional[Any] = None,
         response: httpx.Response,
         retry_after: Optional[float] = None,
+        limit: Optional[int] = None,
+        period: Optional[str] = None,
     ) -> None:
         super().__init__(
             status_code,
@@ -249,6 +296,8 @@ class GatewayTimeoutError(APIStatusError):
             response=response,
         )
         self.retry_after = retry_after
+        self.limit = limit
+        self.period = period
 
 
 # ---------------------------------------------------------------------------
@@ -298,14 +347,36 @@ def makeStatusError(
         status_code, APIStatusError
     )
 
-    # Extract retry_after for classes that support it
+    # Extract retry hints for classes that support them
+    # Prefer body: error.details.retry_after, fallback to HTTP header
     retry_after: Optional[float] = None
-    raw_retry: Optional[str] = response.headers.get("retry-after")
-    if raw_retry is not None:
-        try:
-            retry_after = float(raw_retry)
-        except (ValueError, TypeError):
-            retry_after = None
+    limit: Optional[int] = None
+    period: Optional[str] = None
+
+    if isinstance(details, dict):
+        raw_body_retry: Any = details.get("retry_after")
+        if raw_body_retry is not None:
+            try:
+                retry_after = float(raw_body_retry)
+            except (ValueError, TypeError):
+                pass
+        raw_limit: Any = details.get("limit")
+        if raw_limit is not None:
+            try:
+                limit = int(raw_limit)
+            except (ValueError, TypeError):
+                pass
+        raw_period: Any = details.get("period")
+        if isinstance(raw_period, str):
+            period = raw_period
+
+    if retry_after is None:
+        raw_header_retry: Optional[str] = response.headers.get("retry-after")
+        if raw_header_retry is not None:
+            try:
+                retry_after = float(raw_header_retry)
+            except (ValueError, TypeError):
+                pass
 
     common_kwargs: Dict[str, Any] = dict(
         code=code,
@@ -318,7 +389,11 @@ def makeStatusError(
 
     if exception_class in (RateLimitError, ServiceUnavailableError, GatewayTimeoutError):
         return exception_class(
-            status_code, **common_kwargs, retry_after=retry_after  # type: ignore[call-arg]
+            status_code,
+            **common_kwargs,
+            retry_after=retry_after,  # type: ignore[call-arg]
+            limit=limit,
+            period=period,
         )
 
     return exception_class(status_code, **common_kwargs)

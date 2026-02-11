@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
+from knowhere._exceptions import ValidationError
+
 
 # ---------------------------------------------------------------------------
 # Filename sanitisation helper
@@ -30,11 +32,11 @@ def _sanitizeFilename(name: str) -> str:
 
 
 def _ensurePathWithinDirectory(base: Path, target: Path) -> Path:
-    """Raise ``ValueError`` if *target* escapes *base* (Zip Slip prevention)."""
+    """Raise ``ValidationError`` if *target* escapes *base* (Zip Slip prevention)."""
     resolved_base: Path = base.resolve()
     resolved_target: Path = target.resolve()
     if not str(resolved_target).startswith(str(resolved_base)):
-        raise ValueError(
+        raise ValidationError(
             f"Path '{resolved_target}' escapes output directory '{resolved_base}'."
         )
     return resolved_target

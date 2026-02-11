@@ -22,6 +22,7 @@ from knowhere._exceptions import (
     ConflictError,
     GatewayTimeoutError,
     InternalServerError,
+    InvalidStateError,
     JobFailedError,
     KnowhereError,
     NotFoundError,
@@ -30,6 +31,7 @@ from knowhere._exceptions import (
     PollingTimeoutError,
     RateLimitError,
     ServiceUnavailableError,
+    ValidationError,
 )
 from knowhere._types import PollProgressCallback, UploadProgressCallback
 from knowhere._version import __version__
@@ -58,6 +60,8 @@ __all__: list[str] = [
     "__version__",
     # Exceptions
     "KnowhereError",
+    "ValidationError",
+    "InvalidStateError",
     "APIConnectionError",
     "APITimeoutError",
     "APIStatusError",

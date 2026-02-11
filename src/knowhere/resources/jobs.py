@@ -8,6 +8,7 @@ from typing import Any, BinaryIO, Dict, Optional, Union
 import httpx
 
 from knowhere._constants import DEFAULT_POLL_INTERVAL, DEFAULT_POLL_TIMEOUT
+from knowhere._exceptions import InvalidStateError
 from knowhere._logging import getLogger
 from knowhere._types import (
     PollProgressCallback,
@@ -84,7 +85,7 @@ class Jobs(SyncAPIResource):
         """
         if isinstance(job, Job):
             if not job.upload_url:
-                raise ValueError("Job does not have an upload URL.")
+                raise InvalidStateError("Job does not have an upload URL.")
             upload_url: str = job.upload_url
             upload_headers: Optional[Dict[str, str]] = job.upload_headers
         else:
@@ -134,7 +135,7 @@ class Jobs(SyncAPIResource):
         """
         if isinstance(job_result, JobResult):
             if not job_result.result_url:
-                raise ValueError("JobResult does not have a result_url.")
+                raise InvalidStateError("JobResult does not have a result_url.")
             result_url: str = job_result.result_url
         else:
             result_url = job_result
@@ -192,7 +193,7 @@ class AsyncJobs(AsyncAPIResource):
         """Upload a file for a job (async)."""
         if isinstance(job, Job):
             if not job.upload_url:
-                raise ValueError("Job does not have an upload URL.")
+                raise InvalidStateError("Job does not have an upload URL.")
             upload_url: str = job.upload_url
             upload_headers: Optional[Dict[str, str]] = job.upload_headers
         else:
@@ -234,7 +235,7 @@ class AsyncJobs(AsyncAPIResource):
         """Download and parse the result ZIP (async)."""
         if isinstance(job_result, JobResult):
             if not job_result.result_url:
-                raise ValueError("JobResult does not have a result_url.")
+                raise InvalidStateError("JobResult does not have a result_url.")
             result_url: str = job_result.result_url
         else:
             result_url = job_result

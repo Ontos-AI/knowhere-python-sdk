@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
+import random
+import time
 from pathlib import Path
 from typing import BinaryIO, Dict, Optional, Union
 
 import httpx
 
+from knowhere._constants import DEFAULT_UPLOAD_MAX_RETRIES
 from knowhere._exceptions import APIConnectionError, APITimeoutError
 from knowhere._logging import getLogger
 from knowhere._types import UploadProgressCallback
@@ -15,6 +19,26 @@ _logger = getLogger()
 
 # Chunk size for streaming uploads (256 KiB)
 _UPLOAD_CHUNK_SIZE: int = 256 * 1024
+
+# Storage-provider HTTP status codes that are safe to retry.
+# These are transient errors from S3/GCS/Azure Blob, not Knowhere API codes.
+_UPLOAD_RETRYABLE_STATUS_CODES: frozenset[int] = frozenset({500, 502, 503, 504})
+
+
+def _calculateUploadRetryDelay(attempt: int) -> float:
+    """Exponential backoff with jitter for upload retries."""
+    base_delay: float = min(1.0 * (2 ** attempt), 16.0)
+    jitter: float = random.uniform(0, base_delay * 0.25)
+    return base_delay + jitter
+
+
+def _isRetryableUploadError(exc: Exception) -> bool:
+    """Return True if the upload error is transient and worth retrying."""
+    if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException)):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in _UPLOAD_RETRYABLE_STATUS_CODES
+    return False
 
 
 def _prepareFileContent(
@@ -66,41 +90,68 @@ def syncUploadFile(
     on_progress: Optional[UploadProgressCallback] = None,
     *,
     timeout: float = 600.0,
+    max_retries: int = DEFAULT_UPLOAD_MAX_RETRIES,
 ) -> None:
-    """Upload *file* to *upload_url* using a synchronous PUT request."""
+    """Upload *file* to *upload_url* using a synchronous PUT request.
+
+    Retries on connection errors, timeouts, and transient storage HTTP errors
+    (500/502/503/504) up to *max_retries* times.
+    """
     content, total_bytes = _prepareFileContent(file)
     headers: Dict[str, str] = _buildUploadHeaders(upload_headers, total_bytes)
-
-    _logger.debug("Uploading %s bytes to %s", total_bytes, upload_url)
 
     if isinstance(content, bytes):
         data: bytes = content
     else:
-        # BinaryIO — read all for simplicity (already measured size)
         pos: int = content.tell()
         data = content.read()
         content.seek(pos)
 
-    if on_progress:
-        on_progress(0, total_bytes)
+    last_exc: Optional[Exception] = None
 
-    try:
-        response: httpx.Response = client.put(
-            upload_url,
-            content=data,
-            headers=headers,
-            timeout=timeout,
+    for attempt in range(max_retries + 1):
+        _logger.debug(
+            "Upload attempt %d/%d — %s bytes to %s",
+            attempt + 1, max_retries + 1, total_bytes, upload_url,
         )
-        response.raise_for_status()
-    except httpx.TimeoutException as exc:
-        raise APITimeoutError(f"Upload timed out: {exc}") from exc
-    except httpx.HTTPError as exc:
-        raise APIConnectionError(f"Upload failed: {exc}") from exc
 
-    if on_progress:
-        on_progress(len(data), total_bytes)
+        if on_progress and attempt == 0:
+            on_progress(0, total_bytes)
 
-    _logger.debug("Upload complete: %d", response.status_code)
+        try:
+            response: httpx.Response = client.put(
+                upload_url,
+                content=data,
+                headers=headers,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            last_exc = exc
+            if attempt < max_retries and _isRetryableUploadError(exc):
+                delay: float = _calculateUploadRetryDelay(attempt)
+                _logger.warning(
+                    "Upload attempt %d/%d failed (%s), retrying in %.1fs",
+                    attempt + 1, max_retries + 1, exc, delay,
+                )
+                time.sleep(delay)
+                continue
+            # Non-retryable or exhausted retries
+            if isinstance(exc, httpx.TimeoutException):
+                raise APITimeoutError(f"Upload timed out: {exc}") from exc
+            raise APIConnectionError(f"Upload failed: {exc}") from exc
+
+        # Success
+        if on_progress:
+            on_progress(len(data), total_bytes)
+        _logger.debug("Upload complete: %d", response.status_code)
+        return
+
+    # Should not reach here, but guard against it
+    if last_exc is not None:
+        if isinstance(last_exc, httpx.TimeoutException):
+            raise APITimeoutError(f"Upload timed out: {last_exc}") from last_exc
+        raise APIConnectionError(f"Upload failed: {last_exc}") from last_exc
 
 
 async def asyncUploadFile(
@@ -111,37 +162,62 @@ async def asyncUploadFile(
     on_progress: Optional[UploadProgressCallback] = None,
     *,
     timeout: float = 600.0,
+    max_retries: int = DEFAULT_UPLOAD_MAX_RETRIES,
 ) -> None:
-    """Upload *file* to *upload_url* using an async PUT request."""
+    """Upload *file* to *upload_url* using an async PUT request.
+
+    Retries on connection errors, timeouts, and transient storage HTTP errors
+    (500/502/503/504) up to *max_retries* times.
+    """
     content, total_bytes = _prepareFileContent(file)
     headers: Dict[str, str] = _buildUploadHeaders(upload_headers, total_bytes)
-
-    _logger.debug("Async uploading %s bytes to %s", total_bytes, upload_url)
 
     if isinstance(content, bytes):
         data: bytes = content
     else:
-        pos = content.tell()
+        pos: int = content.tell()
         data = content.read()
         content.seek(pos)
 
-    if on_progress:
-        on_progress(0, total_bytes)
+    last_exc: Optional[Exception] = None
 
-    try:
-        response: httpx.Response = await client.put(
-            upload_url,
-            content=data,
-            headers=headers,
-            timeout=timeout,
+    for attempt in range(max_retries + 1):
+        _logger.debug(
+            "Async upload attempt %d/%d — %s bytes to %s",
+            attempt + 1, max_retries + 1, total_bytes, upload_url,
         )
-        response.raise_for_status()
-    except httpx.TimeoutException as exc:
-        raise APITimeoutError(f"Upload timed out: {exc}") from exc
-    except httpx.HTTPError as exc:
-        raise APIConnectionError(f"Upload failed: {exc}") from exc
 
-    if on_progress:
-        on_progress(len(data), total_bytes)
+        if on_progress and attempt == 0:
+            on_progress(0, total_bytes)
 
-    _logger.debug("Async upload complete: %d", response.status_code)
+        try:
+            response: httpx.Response = await client.put(
+                upload_url,
+                content=data,
+                headers=headers,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+        except (httpx.HTTPError, httpx.TimeoutException) as exc:
+            last_exc = exc
+            if attempt < max_retries and _isRetryableUploadError(exc):
+                delay: float = _calculateUploadRetryDelay(attempt)
+                _logger.warning(
+                    "Async upload attempt %d/%d failed (%s), retrying in %.1fs",
+                    attempt + 1, max_retries + 1, exc, delay,
+                )
+                await asyncio.sleep(delay)
+                continue
+            if isinstance(exc, httpx.TimeoutException):
+                raise APITimeoutError(f"Upload timed out: {exc}") from exc
+            raise APIConnectionError(f"Upload failed: {exc}") from exc
+
+        if on_progress:
+            on_progress(len(data), total_bytes)
+        _logger.debug("Async upload complete: %d", response.status_code)
+        return
+
+    if last_exc is not None:
+        if isinstance(last_exc, httpx.TimeoutException):
+            raise APITimeoutError(f"Upload timed out: {last_exc}") from last_exc
+        raise APIConnectionError(f"Upload failed: {last_exc}") from last_exc

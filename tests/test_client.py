@@ -8,6 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
+from knowhere._exceptions import ValidationError
+
 from knowhere._constants import (
     DEFAULT_BASE_URL,
     DEFAULT_MAX_RETRIES,
@@ -62,7 +64,7 @@ class TestKnowhereClient:
 
         with patch.dict(os.environ, {}, clear=True):
             os.environ.pop("KNOWHERE_API_KEY", None)
-            with pytest.raises(ValueError, match="(?i)api.key"):
+            with pytest.raises(ValidationError, match="(?i)api.key"):
                 Knowhere()
 
     def test_default_timeout(self) -> None:
@@ -168,7 +170,7 @@ class TestAsyncKnowhereClient:
 
         with patch.dict(os.environ, {}, clear=True):
             os.environ.pop("KNOWHERE_API_KEY", None)
-            with pytest.raises(ValueError, match="(?i)api.key"):
+            with pytest.raises(ValidationError, match="(?i)api.key"):
                 AsyncKnowhere()
 
     def test_default_values(self) -> None:
