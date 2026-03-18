@@ -35,7 +35,7 @@ CHUNKS_LIST: List[Dict[str, Any]] = [
         "content": "Hello world",
         "path": "test/section1",
         "length": 11,
-        "tokens": 2,
+        "tokens": ["Hello", "world"],
         "keywords": ["hello"],
         "summary": "A greeting",
         "relationships": [],
@@ -51,6 +51,8 @@ CHUNKS_LIST: List[Dict[str, Any]] = [
         "summary": "Test image",
     },
 ]
+
+TEXT_TOKENS_LIST: List[str] = ["Ashish", "Vaswani", "attention", "transformer"]
 
 MARKDOWN: str = "# Test\n\nHello world"
 IMAGE_BYTES: bytes = b"\xff\xd8\xff\xe0"
@@ -146,6 +148,74 @@ class TestParseValidZip:
         assert len(text_chunks) == 1
         assert text_chunks[0].chunk_id == "text_chunk_1"
         assert text_chunks[0].content == "Hello world"
+
+    def test_accepts_text_chunk_tokens_as_list(self) -> None:
+        manifest: Dict[str, Any] = _make_manifest()
+        chunks: List[Dict[str, Any]] = [
+            {
+                "chunk_id": "text_chunk_tokens_list",
+                "type": "text",
+                "content": "Attention is all you need",
+                "path": "paper/abstract",
+                "metadata": {
+                    "length": 25,
+                    "tokens": TEXT_TOKENS_LIST,
+                    "keywords": ["attention", "transformer"],
+                    "summary": "Transformer introduction",
+                    "relationships": [],
+                },
+            }
+        ]
+        zip_bytes: bytes = _build_zip(manifest, chunks=chunks)
+
+        result: ParseResult = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert len(result.text_chunks) == 1
+        assert result.text_chunks[0].tokens == TEXT_TOKENS_LIST
+
+    def test_rejects_legacy_text_chunk_tokens_string(self) -> None:
+        manifest: Dict[str, Any] = _make_manifest()
+        chunks: List[Dict[str, Any]] = [
+            {
+                "chunk_id": "text_chunk_tokens_string",
+                "type": "text",
+                "content": "Attention is all you need",
+                "path": "paper/abstract",
+                "metadata": {
+                    "length": 25,
+                    "tokens": "Ashish;Vaswani;attention;transformer",
+                    "keywords": ["attention", "transformer"],
+                    "summary": "Transformer introduction",
+                    "relationships": [],
+                },
+            }
+        ]
+        zip_bytes: bytes = _build_zip(manifest, chunks=chunks)
+
+        with pytest.raises(KnowhereError, match="expected list\\[str\\]"):
+            parseResultZip(zip_bytes, verify_checksum=False)
+
+    def test_rejects_integer_text_chunk_tokens(self) -> None:
+        manifest: Dict[str, Any] = _make_manifest()
+        chunks: List[Dict[str, Any]] = [
+            {
+                "chunk_id": "text_chunk_tokens_int",
+                "type": "text",
+                "content": "Attention is all you need",
+                "path": "paper/abstract",
+                "metadata": {
+                    "length": 25,
+                    "tokens": 4,
+                    "keywords": ["attention", "transformer"],
+                    "summary": "Transformer introduction",
+                    "relationships": [],
+                },
+            }
+        ]
+        zip_bytes: bytes = _build_zip(manifest, chunks=chunks)
+
+        with pytest.raises(KnowhereError, match="expected list\\[str\\]"):
+            parseResultZip(zip_bytes, verify_checksum=False)
 
     def test_loads_image_chunks_with_data(self) -> None:
         manifest: Dict[str, Any] = _make_manifest()

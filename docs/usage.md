@@ -249,7 +249,7 @@ Every chunk shares a base set of fields (`chunk_id`, `type`, `content`, `path`).
 | `content` | `str` | The text content |
 | `path` | `str \| None` | Document structure path (e.g. `"Section 1 > Subsection 2"`) |
 | `length` | `int` | Character count |
-| `tokens` | `int \| None` | Token count (if computed) |
+| `tokens` | `List[str] \| None` | Tokenized words returned by the parser pipeline |
 | `keywords` | `List[str] \| None` | Extracted keywords (requires `summary_txt: True`) |
 | `summary` | `str \| None` | AI-generated summary (requires `summary_txt: True`) |
 | `relationships` | `List \| None` | Relationships to other chunks |

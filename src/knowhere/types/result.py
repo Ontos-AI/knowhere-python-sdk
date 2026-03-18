@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
+from typing_extensions import TypeAlias
 
 from knowhere._exceptions import ValidationError
 
@@ -124,12 +125,15 @@ class BaseChunk(BaseModel):
     path: Optional[str] = None
 
 
+TextChunkTokens: TypeAlias = List[str]
+
+
 class TextChunk(BaseChunk):
     """A text chunk extracted from the document."""
 
     type: str = "text"
     length: int = 0
-    tokens: Optional[int] = None
+    tokens: Optional[TextChunkTokens] = None
     keywords: Optional[List[str]] = None
     summary: Optional[str] = None
     relationships: Optional[List[Union[Dict[str, Any], str]]] = None

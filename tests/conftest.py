@@ -138,7 +138,7 @@ CHUNKS_LIST: list[Dict[str, Any]] = [
         "content": "Hello world",
         "path": "test/section1",
         "length": 11,
-        "tokens": 2,
+        "tokens": ["Hello", "world"],
         "keywords": ["hello"],
         "summary": "A greeting",
         "relationships": [],

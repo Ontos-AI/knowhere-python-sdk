@@ -391,7 +391,7 @@ class TestTextChunkModel:
             content="Some text content",
             path="doc/section1",
             length=17,
-            tokens=4,
+            tokens=["Some", "text", "content"],
             keywords=["text", "content"],
             summary="A text chunk",
             relationships=[{"target": "text_2", "type": "follows"}],
@@ -400,7 +400,7 @@ class TestTextChunkModel:
         assert chunk.type == "text"
         assert chunk.content == "Some text content"
         assert chunk.length == 17
-        assert chunk.tokens == 4
+        assert chunk.tokens == ["Some", "text", "content"]
         assert chunk.keywords == ["text", "content"]
         assert chunk.summary == "A text chunk"
         assert chunk.relationships is not None
@@ -418,6 +418,13 @@ class TestTextChunkModel:
     def test_is_instance_of_base_chunk(self) -> None:
         chunk: TextChunk = TextChunk(chunk_id="text_3")
         assert isinstance(chunk, BaseChunk)
+
+    def test_accepts_tokens_list(self) -> None:
+        chunk: TextChunk = TextChunk(
+            chunk_id="text_4",
+            tokens=["attention", "transformer"],
+        )
+        assert chunk.tokens == ["attention", "transformer"]
 
 
 # ---------------------------------------------------------------------------

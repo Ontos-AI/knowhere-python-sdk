@@ -18,6 +18,7 @@ from knowhere.types.result import (
     ParseResult,
     TableChunk,
     TextChunk,
+    TextChunkTokens,
 )
 
 _logger = getLogger()
@@ -79,6 +80,38 @@ def _extractFilePath(raw: Dict[str, Any]) -> Optional[str]:
     return fallback
 
 
+def _normalizeTokenList(raw_tokens: List[Any]) -> List[str]:
+    """Return a string-only token list with empty values removed."""
+    normalized_tokens: List[str] = []
+    for raw_token in raw_tokens:
+        token_text: str = str(raw_token).strip()
+        if token_text:
+            normalized_tokens.append(token_text)
+    return normalized_tokens
+
+
+def _parseTextChunkTokens(
+    raw_tokens: Any,
+    *,
+    chunk_id: str,
+) -> Optional[TextChunkTokens]:
+    """Normalize text chunk tokens from the current backend payload."""
+    if raw_tokens is None:
+        return None
+    if isinstance(raw_tokens, bool):
+        raise KnowhereError(
+            f"Invalid tokens payload for text chunk '{chunk_id}': expected list[str], got bool."
+        )
+    if isinstance(raw_tokens, list):
+        return _normalizeTokenList(raw_tokens)
+
+    raise KnowhereError(
+        "Invalid tokens payload for text chunk "
+        f"'{chunk_id}': expected list[str], "
+        f"got {type(raw_tokens).__name__}."
+    )
+
+
 def _buildChunks(
     raw_chunks: List[Dict[str, Any]],
     zf: zipfile.ZipFile,
@@ -127,13 +160,15 @@ def _buildChunks(
             )
         else:
             metadata = raw.get("metadata", {})
+            chunk_id: str = raw.get("chunk_id", "")
+            raw_tokens: Any = metadata.get("tokens", raw.get("tokens"))
             chunk = TextChunk(
-                chunk_id=raw.get("chunk_id", ""),
+                chunk_id=chunk_id,
                 type="text",
                 content=raw.get("content", ""),
                 path=raw.get("path"),
                 length=metadata.get("length", raw.get("length", 0)),
-                tokens=metadata.get("tokens", raw.get("tokens")),
+                tokens=_parseTextChunkTokens(raw_tokens, chunk_id=chunk_id),
                 keywords=metadata.get("keywords", raw.get("keywords")),
                 summary=metadata.get("summary", raw.get("summary")),
                 relationships=metadata.get("relationships", raw.get("relationships")),
