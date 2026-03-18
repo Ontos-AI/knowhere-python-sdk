@@ -419,6 +419,13 @@ class TestTextChunkModel:
         chunk: TextChunk = TextChunk(chunk_id="text_3")
         assert isinstance(chunk, BaseChunk)
 
+    def test_accepts_tokens_list(self) -> None:
+        chunk: TextChunk = TextChunk(
+            chunk_id="text_4",
+            tokens=["attention", "transformer"],
+        )
+        assert chunk.tokens == ["attention", "transformer"]
+
 
 # ---------------------------------------------------------------------------
 # ImageChunk model

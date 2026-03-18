@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import io
 import json
@@ -18,6 +19,7 @@ from knowhere.types.result import (
     ParseResult,
     TableChunk,
     TextChunk,
+    TextChunkTokens,
 )
 
 _logger = getLogger()
@@ -79,6 +81,72 @@ def _extractFilePath(raw: Dict[str, Any]) -> Optional[str]:
     return fallback
 
 
+def _normalizeTokenList(raw_tokens: List[Any]) -> List[str]:
+    """Return a string-only token list with empty values removed."""
+    normalized_tokens: List[str] = []
+    for raw_token in raw_tokens:
+        token_text: str = str(raw_token).strip()
+        if token_text:
+            normalized_tokens.append(token_text)
+    return normalized_tokens
+
+
+def _parseTokenString(raw_tokens: str) -> Optional[List[str]]:
+    """Parse legacy string token formats into a token list when possible."""
+    token_text: str = raw_tokens.strip()
+    if not token_text:
+        return None
+
+    if token_text.startswith("[") and token_text.endswith("]"):
+        try:
+            literal_value: Any = ast.literal_eval(token_text)
+        except (SyntaxError, ValueError):
+            literal_value = None
+        if isinstance(literal_value, list):
+            return _normalizeTokenList(literal_value)
+        if isinstance(literal_value, str):
+            token_text = literal_value.strip()
+
+    if ";" in token_text:
+        return _normalizeTokenList(token_text.split(";"))
+    if "->" in token_text:
+        return _normalizeTokenList(token_text.split("->"))
+    return None
+
+
+def _parseTextChunkTokens(
+    raw_tokens: Any,
+    *,
+    chunk_id: str,
+) -> Optional[TextChunkTokens]:
+    """Normalize text chunk tokens across old and new backend payloads."""
+    if raw_tokens is None:
+        return None
+    if isinstance(raw_tokens, bool):
+        raise KnowhereError(
+            f"Invalid tokens payload for text chunk '{chunk_id}': expected int or token list, got bool."
+        )
+    if isinstance(raw_tokens, int):
+        return raw_tokens
+    if isinstance(raw_tokens, list):
+        return _normalizeTokenList(raw_tokens)
+    if isinstance(raw_tokens, str):
+        stripped_tokens: str = raw_tokens.strip()
+        if not stripped_tokens:
+            return None
+        if stripped_tokens.isdigit():
+            return int(stripped_tokens)
+        parsed_tokens: Optional[List[str]] = _parseTokenString(stripped_tokens)
+        if parsed_tokens is not None:
+            return parsed_tokens
+
+    raise KnowhereError(
+        "Invalid tokens payload for text chunk "
+        f"'{chunk_id}': expected int, list[str], or delimited string, "
+        f"got {type(raw_tokens).__name__}."
+    )
+
+
 def _buildChunks(
     raw_chunks: List[Dict[str, Any]],
     zf: zipfile.ZipFile,
@@ -127,13 +195,15 @@ def _buildChunks(
             )
         else:
             metadata = raw.get("metadata", {})
+            chunk_id: str = raw.get("chunk_id", "")
+            raw_tokens: Any = metadata.get("tokens", raw.get("tokens"))
             chunk = TextChunk(
-                chunk_id=raw.get("chunk_id", ""),
+                chunk_id=chunk_id,
                 type="text",
                 content=raw.get("content", ""),
                 path=raw.get("path"),
                 length=metadata.get("length", raw.get("length", 0)),
-                tokens=metadata.get("tokens", raw.get("tokens")),
+                tokens=_parseTextChunkTokens(raw_tokens, chunk_id=chunk_id),
                 keywords=metadata.get("keywords", raw.get("keywords")),
                 summary=metadata.get("summary", raw.get("summary")),
                 relationships=metadata.get("relationships", raw.get("relationships")),
