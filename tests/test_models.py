@@ -391,7 +391,7 @@ class TestTextChunkModel:
             content="Some text content",
             path="doc/section1",
             length=17,
-            tokens=4,
+            tokens=["Some", "text", "content"],
             keywords=["text", "content"],
             summary="A text chunk",
             relationships=[{"target": "text_2", "type": "follows"}],
@@ -400,7 +400,7 @@ class TestTextChunkModel:
         assert chunk.type == "text"
         assert chunk.content == "Some text content"
         assert chunk.length == 17
-        assert chunk.tokens == 4
+        assert chunk.tokens == ["Some", "text", "content"]
         assert chunk.keywords == ["text", "content"]
         assert chunk.summary == "A text chunk"
         assert chunk.relationships is not None

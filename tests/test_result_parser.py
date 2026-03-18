@@ -35,7 +35,7 @@ CHUNKS_LIST: List[Dict[str, Any]] = [
         "content": "Hello world",
         "path": "test/section1",
         "length": 11,
-        "tokens": 2,
+        "tokens": ["Hello", "world"],
         "keywords": ["hello"],
         "summary": "A greeting",
         "relationships": [],
@@ -173,7 +173,7 @@ class TestParseValidZip:
         assert len(result.text_chunks) == 1
         assert result.text_chunks[0].tokens == TEXT_TOKENS_LIST
 
-    def test_accepts_legacy_text_chunk_tokens_string(self) -> None:
+    def test_rejects_legacy_text_chunk_tokens_string(self) -> None:
         manifest: Dict[str, Any] = _make_manifest()
         chunks: List[Dict[str, Any]] = [
             {
@@ -192,10 +192,30 @@ class TestParseValidZip:
         ]
         zip_bytes: bytes = _build_zip(manifest, chunks=chunks)
 
-        result: ParseResult = parseResultZip(zip_bytes, verify_checksum=False)
+        with pytest.raises(KnowhereError, match="expected list\\[str\\]"):
+            parseResultZip(zip_bytes, verify_checksum=False)
 
-        assert len(result.text_chunks) == 1
-        assert result.text_chunks[0].tokens == TEXT_TOKENS_LIST
+    def test_rejects_integer_text_chunk_tokens(self) -> None:
+        manifest: Dict[str, Any] = _make_manifest()
+        chunks: List[Dict[str, Any]] = [
+            {
+                "chunk_id": "text_chunk_tokens_int",
+                "type": "text",
+                "content": "Attention is all you need",
+                "path": "paper/abstract",
+                "metadata": {
+                    "length": 25,
+                    "tokens": 4,
+                    "keywords": ["attention", "transformer"],
+                    "summary": "Transformer introduction",
+                    "relationships": [],
+                },
+            }
+        ]
+        zip_bytes: bytes = _build_zip(manifest, chunks=chunks)
+
+        with pytest.raises(KnowhereError, match="expected list\\[str\\]"):
+            parseResultZip(zip_bytes, verify_checksum=False)
 
     def test_loads_image_chunks_with_data(self) -> None:
         manifest: Dict[str, Any] = _make_manifest()

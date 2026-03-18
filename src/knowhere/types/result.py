@@ -125,7 +125,7 @@ class BaseChunk(BaseModel):
     path: Optional[str] = None
 
 
-TextChunkTokens: TypeAlias = Union[int, List[str]]
+TextChunkTokens: TypeAlias = List[str]
 
 
 class TextChunk(BaseChunk):
