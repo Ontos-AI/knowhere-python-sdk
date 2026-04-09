@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.1](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.2.0...v0.2.1) (2026-04-09)
+
+
+### Bug Fixes
+
+* narrow status error constructors ([c8fc035](https://github.com/Ontos-AI/knowhere-python-sdk/commit/c8fc035dade768c5364e50de890bde0fb280586e))
+* remove stale mypy ignore ([150336a](https://github.com/Ontos-AI/knowhere-python-sdk/commit/150336a5dc0497b287437dffa6e1506f4bcf8fbf))
+* sync optimized parse result payload ([a7903ad](https://github.com/Ontos-AI/knowhere-python-sdk/commit/a7903ad53fb5ab142c5835134c9a942eb5cdfe21))
+* sync parse result payload with current API schema ([430b067](https://github.com/Ontos-AI/knowhere-python-sdk/commit/430b067b37ce0b2eb8bd3c81cfca56b1df657376))
+
 ## [0.2.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.1.0...v0.2.0) (2026-03-18)
 
 
