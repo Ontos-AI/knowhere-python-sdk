@@ -391,7 +391,7 @@ def makeStatusError(
         return exception_class(
             status_code,
             **common_kwargs,
-            retry_after=retry_after,  # type: ignore[call-arg]
+            retry_after=retry_after,
             limit=limit,
             period=period,
         )
