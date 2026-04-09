@@ -56,6 +56,7 @@ TEXT_TOKENS_LIST: List[str] = ["Ashish", "Vaswani", "attention", "transformer"]
 
 MARKDOWN: str = "# Test\n\nHello world"
 IMAGE_BYTES: bytes = b"\xff\xd8\xff\xe0"
+TABLE_HTML: str = "<table><tr><td>Optimized</td></tr></table>"
 
 
 def _build_zip(
@@ -118,6 +119,91 @@ def _make_manifest(checksum_value: str = "") -> Dict[str, Any]:
             "tables": [],
         },
     }
+
+
+def _make_optimized_manifest() -> Dict[str, Any]:
+    """Build a manifest dict matching the current optimized API payload."""
+    return {
+        "version": "2.0",
+        "job_id": "job_optimized123",
+        "data_id": None,
+        "source_file_name": "optimized.pdf",
+        "processing_date": "2026-04-09T08:21:12.294Z",
+        "processing": {
+            "page_count": 12,
+            "billing_status": "charged",
+            "cost": {
+                "micro_dollars": 60000,
+                "credits": 0.06,
+            },
+            "timing": {
+                "started_at": "2026-04-09T08:20:56.634Z",
+                "completed_at": "2026-04-09T08:21:12.288Z",
+                "duration_ms": 15653,
+            },
+        },
+        "statistics": {
+            "total_chunks": 3,
+            "text_chunks": 1,
+            "image_chunks": 1,
+            "table_chunks": 1,
+            "total_pages": None,
+        },
+    }
+
+
+def _make_optimized_chunks() -> List[Dict[str, Any]]:
+    """Build chunks matching the current optimized API payload."""
+    return [
+        {
+            "chunk_id": "text_chunk_optimized",
+            "type": "text",
+            "content": "Text chunk with embedded resources.",
+            "path": "Default_Root/optimized.pdf-->Section 1",
+            "metadata": {
+                "length": 35,
+                "summary": "",
+                "page_nums": [1, 2],
+                "tokens": ["Text", "chunk"],
+                "keywords": ["optimized"],
+                "connect_to": [
+                    {
+                        "target": "image_chunk_optimized",
+                        "relation": "embeds",
+                        "ref": "[images/IMAGE_test1.jpg]",
+                    }
+                ],
+            },
+        },
+        {
+            "chunk_id": "image_chunk_optimized",
+            "type": "image",
+            "content": "[images/IMAGE_test1.jpg]",
+            "path": "images/IMAGE_test1.jpg",
+            "metadata": {
+                "length": 1,
+                "summary": "Optimized image chunk",
+                "page_nums": [2],
+                "file_path": "images/IMAGE_test1.jpg",
+                "keywords": [],
+                "tokens": [],
+            },
+        },
+        {
+            "chunk_id": "table_chunk_optimized",
+            "type": "table",
+            "content": TABLE_HTML,
+            "path": "tables/table-optimized.html",
+            "metadata": {
+                "length": 1,
+                "summary": "Optimized table chunk",
+                "page_nums": [3],
+                "file_path": "tables/table-optimized.html",
+                "keywords": ["optimized"],
+                "tokens": [],
+            },
+        },
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -254,6 +340,114 @@ class TestParseValidZip:
 
         assert result.getChunk("nonexistent") is None
 
+    def test_exposes_optimized_payload_metadata_and_sidecar_assets(self) -> None:
+        manifest: Dict[str, Any] = _make_optimized_manifest()
+        chunks: List[Dict[str, Any]] = _make_optimized_chunks()
+        zip_bytes: bytes = _build_zip(
+            manifest,
+            chunks=chunks,
+            markdown="# Optimized Result\n\nBody",
+            extra_entries={
+                "chunks_slim.json": json.dumps(
+                    {
+                        "chunks": [
+                            {
+                                "type": "text",
+                                "path": "Default_Root/optimized.pdf-->Section 1",
+                                "content": "Text chunk with embedded resources.",
+                                "summary": "",
+                            }
+                        ]
+                    }
+                ).encode("utf-8"),
+                "kb.csv": b"chunk_id,type\ntext_chunk_optimized,text\n",
+                "hierarchy.json": json.dumps(
+                    {"Default_Root": {"optimized.pdf": {}}}
+                ).encode("utf-8"),
+                "toc_hierarchies.json": json.dumps(
+                    [{"toc_range": [1, 3], "scan_range": [1, 10]}]
+                ).encode("utf-8"),
+                "hierarchy_view.html": b"<html><body>Optimized hierarchy view</body></html>",
+                "tables/table-optimized.html": TABLE_HTML.encode("utf-8"),
+            },
+        )
+
+        result: ParseResult = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert result.manifest.version == "2.0"
+        assert result.manifest.files is None
+        assert result.manifest.processing is not None
+        assert result.manifest.processing.page_count == 12
+        assert result.manifest.processing.billing_status == "charged"
+        assert result.manifest.processing.cost is not None
+        assert result.manifest.processing.cost.micro_dollars == 60000
+        assert result.text_chunks[0].page_nums == [1, 2]
+        assert result.image_chunks[0].page_nums == [2]
+        assert result.table_chunks[0].page_nums == [3]
+        assert result.text_chunks[0].connect_to == [
+            {
+                "target": "image_chunk_optimized",
+                "relation": "embeds",
+                "ref": "[images/IMAGE_test1.jpg]",
+            }
+        ]
+        assert result.chunks_slim is not None
+        assert len(result.chunks_slim) == 1
+        assert result.kb_csv == "chunk_id,type\ntext_chunk_optimized,text\n"
+        assert result.toc_hierarchies == [{"toc_range": [1, 3], "scan_range": [1, 10]}]
+        assert result.hierarchy_view_html == "<html><body>Optimized hierarchy view</body></html>"
+        assert result.hierarchy == {"Default_Root": {"optimized.pdf": {}}}
+
+    def test_save_preserves_optimized_sidecar_files(self, tmp_path: Path) -> None:
+        manifest: Dict[str, Any] = _make_optimized_manifest()
+        chunks: List[Dict[str, Any]] = _make_optimized_chunks()
+        zip_bytes: bytes = _build_zip(
+            manifest,
+            chunks=chunks,
+            markdown="# Optimized Result\n\nBody",
+            extra_entries={
+                "chunks_slim.json": json.dumps(
+                    {
+                        "chunks": [
+                            {
+                                "type": "text",
+                                "path": "Default_Root/optimized.pdf-->Section 1",
+                                "content": "Text chunk with embedded resources.",
+                                "summary": "",
+                            }
+                        ]
+                    }
+                ).encode("utf-8"),
+                "kb.csv": b"chunk_id,type\ntext_chunk_optimized,text\n",
+                "hierarchy.json": json.dumps(
+                    {"Default_Root": {"optimized.pdf": {}}}
+                ).encode("utf-8"),
+                "toc_hierarchies.json": json.dumps(
+                    [{"toc_range": [1, 3], "scan_range": [1, 10]}]
+                ).encode("utf-8"),
+                "hierarchy_view.html": b"<html><body>Optimized hierarchy view</body></html>",
+                "tables/table-optimized.html": TABLE_HTML.encode("utf-8"),
+            },
+        )
+
+        result: ParseResult = parseResultZip(zip_bytes, verify_checksum=False)
+        output_dir: Path = tmp_path / "optimized-result"
+
+        saved_path: Path = result.save(output_dir)
+
+        assert saved_path == output_dir.resolve()
+        assert (output_dir / "manifest.json").exists()
+        assert (output_dir / "chunks.json").exists()
+        assert (output_dir / "full.md").exists()
+        assert (output_dir / "hierarchy.json").exists()
+        assert (output_dir / "chunks_slim.json").exists()
+        assert (output_dir / "kb.csv").exists()
+        assert (output_dir / "toc_hierarchies.json").exists()
+        assert (output_dir / "hierarchy_view.html").exists()
+        assert (output_dir / "images" / "IMAGE_test1.jpg").exists()
+        assert (output_dir / "tables" / "table-optimized.html").exists()
+        assert (output_dir / "result.zip").exists()
+
 
 # ---------------------------------------------------------------------------
 # Checksum verification
@@ -334,6 +528,7 @@ class TestMissingRequiredFiles:
         result: ParseResult = parseResultZip(
             zip_bytes, verify_checksum=False
         )
+        assert result.chunks == []
 
 
 # ---------------------------------------------------------------------------

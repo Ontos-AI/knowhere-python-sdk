@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-import pytest
-
 from knowhere.types.job import Job, JobError, JobResult
 from knowhere.types.result import (
     BaseChunk,
@@ -16,6 +14,10 @@ from knowhere.types.result import (
     ImageFileInfo,
     Manifest,
     ParseResult,
+    ProcessingCost,
+    ProcessingMetadata,
+    ProcessingTiming,
+    SlimChunk,
     Statistics,
     TableChunk,
     TableFileInfo,
@@ -269,6 +271,27 @@ class TestManifestModel:
         assert manifest.statistics is None
         assert manifest.files is None
 
+    def test_processing_metadata(self) -> None:
+        manifest: Manifest = Manifest(
+            version="2.0",
+            processing=ProcessingMetadata(
+                page_count=12,
+                billing_status="charged",
+                cost=ProcessingCost(micro_dollars=60000, credits=0.06),
+                timing=ProcessingTiming(
+                    started_at="2026-04-09T08:20:56.634Z",
+                    completed_at="2026-04-09T08:21:12.288Z",
+                    duration_ms=15653,
+                ),
+            ),
+        )
+        assert manifest.processing is not None
+        assert manifest.processing.page_count == 12
+        assert manifest.processing.cost is not None
+        assert manifest.processing.cost.micro_dollars == 60000
+        assert manifest.processing.timing is not None
+        assert manifest.processing.timing.duration_ms == 15653
+
 
 # ---------------------------------------------------------------------------
 # Statistics model
@@ -375,6 +398,13 @@ class TestBaseChunkModel:
         chunk: BaseChunk = BaseChunk(chunk_id="chunk_2", type="text")
         assert chunk.content == ""
         assert chunk.path is None
+        assert chunk.page_nums is None
+
+    def test_page_nums_supported(self) -> None:
+        chunk: BaseChunk = BaseChunk(
+            chunk_id="chunk_3", type="text", page_nums=[1, 2]
+        )
+        assert chunk.page_nums == [1, 2]
 
 
 # ---------------------------------------------------------------------------
@@ -391,18 +421,23 @@ class TestTextChunkModel:
             content="Some text content",
             path="doc/section1",
             length=17,
+            page_nums=[1, 2],
             tokens=["Some", "text", "content"],
             keywords=["text", "content"],
             summary="A text chunk",
+            connect_to=[{"target": "img_1", "relation": "embeds"}],
             relationships=[{"target": "text_2", "type": "follows"}],
         )
         assert chunk.chunk_id == "text_1"
         assert chunk.type == "text"
         assert chunk.content == "Some text content"
         assert chunk.length == 17
+        assert chunk.page_nums == [1, 2]
         assert chunk.tokens == ["Some", "text", "content"]
         assert chunk.keywords == ["text", "content"]
         assert chunk.summary == "A text chunk"
+        assert chunk.connect_to is not None
+        assert len(chunk.connect_to) == 1
         assert chunk.relationships is not None
         assert len(chunk.relationships) == 1
 
@@ -413,6 +448,7 @@ class TestTextChunkModel:
         assert chunk.tokens is None
         assert chunk.keywords is None
         assert chunk.summary is None
+        assert chunk.connect_to is None
         assert chunk.relationships is None
 
     def test_is_instance_of_base_chunk(self) -> None:
@@ -567,8 +603,19 @@ def _build_parse_result(
     return ParseResult(
         manifest=manifest,
         chunks=chunks if chunks is not None else default_chunks,
+        chunks_slim=[
+            SlimChunk(
+                type="text",
+                path="doc/section1",
+                content="Hello world",
+                summary="Greeting",
+            )
+        ],
         full_markdown="# Test\n\nHello world",
         hierarchy=None,
+        toc_hierarchies=[{"toc_range": [1, 3]}],
+        kb_csv="chunk_id,type\ntext_1,text\n",
+        hierarchy_view_html="<html><body>Hierarchy</body></html>",
         raw_zip=b"fake zip bytes",
     )
 
@@ -657,3 +704,11 @@ class TestParseResult:
     def test_raw_zip_accessible(self) -> None:
         result: ParseResult = _build_parse_result()
         assert result.raw_zip == b"fake zip bytes"
+
+    def test_optimized_result_fields_accessible(self) -> None:
+        result: ParseResult = _build_parse_result()
+        assert result.chunks_slim is not None
+        assert result.chunks_slim[0].path == "doc/section1"
+        assert result.toc_hierarchies == [{"toc_range": [1, 3]}]
+        assert result.kb_csv == "chunk_id,type\ntext_1,text\n"
+        assert result.hierarchy_view_html == "<html><body>Hierarchy</body></html>"
