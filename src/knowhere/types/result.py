@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -92,10 +93,37 @@ class FileIndex(BaseModel):
 
     chunks: Optional[str] = None
     markdown: Optional[str] = None
+    chunks_slim: Optional[str] = None
     kb_csv: Optional[str] = None
     hierarchy: Optional[str] = None
+    toc_hierarchies: Optional[str] = None
+    hierarchy_view_html: Optional[str] = None
     images: List[ImageFileInfo] = Field(default_factory=list)
     tables: List[TableFileInfo] = Field(default_factory=list)
+
+
+class ProcessingCost(BaseModel):
+    """Billing details emitted by manifest v2."""
+
+    micro_dollars: Optional[int] = None
+    credits: Optional[float] = None
+
+
+class ProcessingTiming(BaseModel):
+    """Timing details emitted by manifest v2."""
+
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    duration_ms: Optional[int] = None
+
+
+class ProcessingMetadata(BaseModel):
+    """Worker-side processing metadata emitted by manifest v2."""
+
+    page_count: Optional[int] = None
+    billing_status: Optional[str] = None
+    cost: Optional[ProcessingCost] = None
+    timing: Optional[ProcessingTiming] = None
 
 
 class Manifest(BaseModel):
@@ -106,6 +134,7 @@ class Manifest(BaseModel):
     data_id: Optional[str] = None
     source_file_name: Optional[str] = None
     processing_date: Optional[str] = None
+    processing: Optional[ProcessingMetadata] = None
     checksum: Optional[Checksum] = None
     statistics: Optional[Statistics] = None
     files: Optional[FileIndex] = None
@@ -123,6 +152,7 @@ class BaseChunk(BaseModel):
     type: str
     content: str = ""
     path: Optional[str] = None
+    page_nums: Optional[List[int]] = None
 
 
 TextChunkTokens: TypeAlias = List[str]
@@ -136,6 +166,7 @@ class TextChunk(BaseChunk):
     tokens: Optional[TextChunkTokens] = None
     keywords: Optional[List[str]] = None
     summary: Optional[str] = None
+    connect_to: Optional[List[Dict[str, Any]]] = None
     relationships: Optional[List[Union[Dict[str, Any], str]]] = None
 
 
@@ -210,6 +241,15 @@ class TableChunk(BaseChunk):
 Chunk = Union[TextChunk, ImageChunk, TableChunk]
 
 
+class SlimChunk(BaseModel):
+    """Minimal chunk entry emitted in chunks_slim.json."""
+
+    type: str
+    path: Optional[str] = None
+    content: str = ""
+    summary: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # ParseResult — the top-level object returned to the user
 # ---------------------------------------------------------------------------
@@ -225,8 +265,12 @@ class ParseResult:
 
     manifest: Manifest
     chunks: List[Chunk]
+    chunks_slim: Optional[List[SlimChunk]]
     full_markdown: str
     hierarchy: Optional[Any]
+    toc_hierarchies: Optional[Any]
+    kb_csv: Optional[str]
+    hierarchy_view_html: Optional[str]
     raw_zip: bytes
 
     def __init__(
@@ -234,14 +278,22 @@ class ParseResult:
         *,
         manifest: Manifest,
         chunks: List[Chunk],
+        chunks_slim: Optional[List[SlimChunk]],
         full_markdown: str,
         hierarchy: Optional[Any],
+        toc_hierarchies: Optional[Any],
+        kb_csv: Optional[str],
+        hierarchy_view_html: Optional[str],
         raw_zip: bytes,
     ) -> None:
         self.manifest = manifest
         self.chunks = chunks
+        self.chunks_slim = chunks_slim
         self.full_markdown = full_markdown
         self.hierarchy = hierarchy
+        self.toc_hierarchies = toc_hierarchies
+        self.kb_csv = kb_csv
+        self.hierarchy_view_html = hierarchy_view_html
         self.raw_zip = raw_zip
 
     # -- convenience properties --
@@ -296,9 +348,57 @@ class ParseResult:
         dir_path: Path = Path(directory)
         dir_path.mkdir(parents=True, exist_ok=True)
 
+        # Manifest / chunks
+        manifest_path: Path = dir_path / "manifest.json"
+        manifest_path.write_text(
+            self.manifest.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+
+        chunks_path: Path = dir_path / "chunks.json"
+        chunks_path.write_text(
+            json.dumps([chunk.model_dump() for chunk in self.chunks], indent=2),
+            encoding="utf-8",
+        )
+
+        if self.chunks_slim is not None:
+            chunks_slim_path: Path = dir_path / "chunks_slim.json"
+            chunks_slim_path.write_text(
+                json.dumps(
+                    {"chunks": [chunk.model_dump() for chunk in self.chunks_slim]},
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
         # Full markdown
         md_path: Path = dir_path / "full.md"
         md_path.write_text(self.full_markdown, encoding="utf-8")
+
+        if self.hierarchy is not None:
+            hierarchy_path: Path = dir_path / "hierarchy.json"
+            hierarchy_path.write_text(
+                json.dumps(self.hierarchy, indent=2),
+                encoding="utf-8",
+            )
+
+        if self.toc_hierarchies is not None:
+            toc_hierarchies_path: Path = dir_path / "toc_hierarchies.json"
+            toc_hierarchies_path.write_text(
+                json.dumps(self.toc_hierarchies, indent=2),
+                encoding="utf-8",
+            )
+
+        if self.kb_csv is not None:
+            kb_csv_path: Path = dir_path / "kb.csv"
+            kb_csv_path.write_text(self.kb_csv, encoding="utf-8")
+
+        if self.hierarchy_view_html is not None:
+            hierarchy_view_path: Path = dir_path / "hierarchy_view.html"
+            hierarchy_view_path.write_text(
+                self.hierarchy_view_html,
+                encoding="utf-8",
+            )
 
         # Images
         if self.image_chunks:

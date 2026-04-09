@@ -16,6 +16,7 @@ from knowhere.types.result import (
     ImageChunk,
     Manifest,
     ParseResult,
+    SlimChunk,
     TableChunk,
     TextChunk,
     TextChunkTokens,
@@ -134,6 +135,7 @@ def _buildChunks(
                 type="image",
                 content=raw.get("content", ""),
                 path=raw.get("path"),
+                page_nums=metadata.get("page_nums", raw.get("page_nums")),
                 length=metadata.get("length", raw.get("length", 0)),
                 file_path=file_path,
                 original_name=metadata.get("original_name", raw.get("original_name")),
@@ -151,6 +153,7 @@ def _buildChunks(
                 type="table",
                 content=raw.get("content", ""),
                 path=raw.get("path"),
+                page_nums=metadata.get("page_nums", raw.get("page_nums")),
                 length=metadata.get("length", raw.get("length", 0)),
                 file_path=file_path,
                 original_name=metadata.get("original_name", raw.get("original_name")),
@@ -167,10 +170,12 @@ def _buildChunks(
                 type="text",
                 content=raw.get("content", ""),
                 path=raw.get("path"),
+                page_nums=metadata.get("page_nums", raw.get("page_nums")),
                 length=metadata.get("length", raw.get("length", 0)),
                 tokens=_parseTextChunkTokens(raw_tokens, chunk_id=chunk_id),
                 keywords=metadata.get("keywords", raw.get("keywords")),
                 summary=metadata.get("summary", raw.get("summary")),
+                connect_to=metadata.get("connect_to", raw.get("connect_to")),
                 relationships=metadata.get("relationships", raw.get("relationships")),
             )
 
@@ -230,12 +235,39 @@ def parseResultZip(
         json.loads(hierarchy_text) if hierarchy_text else None
     )
 
+    # -- Optimized sidecar files --
+    chunks_slim_text: Optional[str] = _readZipText(zf, "chunks_slim.json")
+    parsed_chunks_slim: Any = json.loads(chunks_slim_text) if chunks_slim_text else None
+    if isinstance(parsed_chunks_slim, dict) and "chunks" in parsed_chunks_slim:
+        raw_chunks_slim: List[Dict[str, Any]] = parsed_chunks_slim["chunks"]
+    elif isinstance(parsed_chunks_slim, list):
+        raw_chunks_slim = parsed_chunks_slim
+    else:
+        raw_chunks_slim = []
+    chunks_slim: Optional[List[SlimChunk]] = (
+        [SlimChunk.model_validate(chunk) for chunk in raw_chunks_slim]
+        if chunks_slim_text is not None
+        else None
+    )
+
+    toc_hierarchies_text: Optional[str] = _readZipText(zf, "toc_hierarchies.json")
+    toc_hierarchies: Optional[Any] = (
+        json.loads(toc_hierarchies_text) if toc_hierarchies_text else None
+    )
+
+    kb_csv: Optional[str] = _readZipText(zf, "kb.csv")
+    hierarchy_view_html: Optional[str] = _readZipText(zf, "hierarchy_view.html")
+
     zf.close()
 
     return ParseResult(
         manifest=manifest,
         chunks=chunks,
+        chunks_slim=chunks_slim,
         full_markdown=full_markdown,
         hierarchy=hierarchy,
+        toc_hierarchies=toc_hierarchies,
+        kb_csv=kb_csv,
+        hierarchy_view_html=hierarchy_view_html,
         raw_zip=zip_bytes,
     )

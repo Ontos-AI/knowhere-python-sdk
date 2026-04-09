@@ -387,11 +387,29 @@ def makeStatusError(
         response=response,
     )
 
-    if exception_class in (RateLimitError, ServiceUnavailableError, GatewayTimeoutError):
-        return exception_class(
+    if exception_class is RateLimitError:
+        return RateLimitError(
             status_code,
             **common_kwargs,
-            retry_after=retry_after,  # type: ignore[call-arg]
+            retry_after=retry_after,
+            limit=limit,
+            period=period,
+        )
+
+    if exception_class is ServiceUnavailableError:
+        return ServiceUnavailableError(
+            status_code,
+            **common_kwargs,
+            retry_after=retry_after,
+            limit=limit,
+            period=period,
+        )
+
+    if exception_class is GatewayTimeoutError:
+        return GatewayTimeoutError(
+            status_code,
+            **common_kwargs,
+            retry_after=retry_after,
             limit=limit,
             period=period,
         )
