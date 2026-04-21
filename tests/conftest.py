@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import io
 import json
 import zipfile
@@ -72,6 +71,8 @@ def mock_job_response() -> Dict[str, Any]:
         "job_id": "job_test123",
         "status": "waiting-file",
         "source_type": "file",
+        "namespace": "default",
+        "document_id": "doc_test123",
         "data_id": None,
         "created_at": "2025-01-01T00:00:00Z",
         "upload_url": "https://storage.example.com/upload?token=abc",
@@ -87,6 +88,8 @@ def mock_job_result_response() -> Dict[str, Any]:
         "job_id": "job_test123",
         "status": "done",
         "source_type": "file",
+        "namespace": "default",
+        "document_id": "doc_test123",
         "data_id": "data_abc",
         "created_at": "2025-01-01T00:00:00Z",
         "progress": 1.0,

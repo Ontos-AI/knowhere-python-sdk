@@ -115,6 +115,24 @@ class TestKnowhereClient:
         assert hasattr(jobs, "load")
         client.close()
 
+    def test_retrieval_property_returns_retrieval_instance(self) -> None:
+        from knowhere import Knowhere
+
+        client: Knowhere = Knowhere(api_key="sk_test")
+        retrieval: Any = client.retrieval
+        assert hasattr(retrieval, "query")
+        client.close()
+
+    def test_documents_property_returns_documents_instance(self) -> None:
+        from knowhere import Knowhere
+
+        client: Knowhere = Knowhere(api_key="sk_test")
+        documents: Any = client.documents
+        assert hasattr(documents, "list")
+        assert hasattr(documents, "get")
+        assert hasattr(documents, "archive")
+        client.close()
+
     def test_base_url_trailing_slash_stripped(self) -> None:
         from knowhere import Knowhere
 
@@ -200,3 +218,19 @@ class TestAsyncKnowhereClient:
         assert hasattr(jobs, "upload")
         assert hasattr(jobs, "wait")
         assert hasattr(jobs, "load")
+
+    def test_retrieval_property_returns_async_retrieval_instance(self) -> None:
+        from knowhere import AsyncKnowhere
+
+        client: AsyncKnowhere = AsyncKnowhere(api_key="sk_test")
+        retrieval: Any = client.retrieval
+        assert hasattr(retrieval, "query")
+
+    def test_documents_property_returns_async_documents_instance(self) -> None:
+        from knowhere import AsyncKnowhere
+
+        client: AsyncKnowhere = AsyncKnowhere(api_key="sk_test")
+        documents: Any = client.documents
+        assert hasattr(documents, "list")
+        assert hasattr(documents, "get")
+        assert hasattr(documents, "archive")

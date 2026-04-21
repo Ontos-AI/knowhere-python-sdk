@@ -32,6 +32,74 @@ for chunk in result.text_chunks:
     print(chunk.content[:80])
 ```
 
+## Retrieval and document lifecycle
+
+New documents are published into a retrieval namespace. The server returns a
+stable `document_id` when you create a job; persist that value if you need to
+update or archive the same document later.
+
+```python
+job = client.jobs.create(
+    source_type="url",
+    source_url="https://example.com/manual.pdf",
+    namespace="support-center",
+)
+
+print(job.document_id)  # "doc_..."
+```
+
+After the job is done and published, query the canonical document content:
+
+```python
+response = client.retrieval.query(
+    namespace="support-center",
+    query="How do I reset Bluetooth pairing?",
+    top_k=5,
+)
+
+for result in response.results:
+    print(result.content)
+    print(result.score)
+    print(result.source.source_file_name, result.source.section_path)
+```
+
+Use `document_id` to update or archive a document:
+
+```python
+update_job = client.jobs.create(
+    source_type="url",
+    source_url="https://example.com/manual-v2.pdf",
+    document_id=job.document_id,
+)
+
+document = client.documents.get(job.document_id)
+print(document.status)
+
+client.documents.archive(job.document_id)
+```
+
+You can also list documents in a namespace:
+
+```python
+documents = client.documents.list(namespace="support-center")
+for document in documents.documents:
+    print(document.document_id, document.status)
+```
+
+Retrieval supports exclusions when clients want follow-up results that avoid
+previously used documents or sections:
+
+```python
+response = client.retrieval.query(
+    namespace="support-center",
+    query="battery charging",
+    exclude_document_ids=["doc_old"],
+    exclude_sections=[
+        {"document_id": "doc_123", "section_path": "Appendix / Legal"}
+    ],
+)
+```
+
 While you can provide an `api_key` keyword argument, we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/) to add `KNOWHERE_API_KEY="sk_..."` to your `.env` file so that your API key is not stored in source control.
 
 ### Parse a local file
@@ -105,8 +173,11 @@ from pathlib import Path
 job = client.jobs.create(
     source_type="file",
     file_name="report.pdf",
+    namespace="support-center",
     parsing_params={"model": "advanced", "ocr_enabled": True},
 )
+
+print(job.document_id)  # Persist this to update/archive the document later.
 
 # Step 2: Upload file to presigned URL
 client.jobs.upload(job, file=Path("report.pdf"))

@@ -11,7 +11,6 @@ import respx
 from knowhere._exceptions import (
     AuthenticationError,
     BadRequestError,
-    ConflictError,
     InternalServerError,
     RateLimitError,
     ServiceUnavailableError,

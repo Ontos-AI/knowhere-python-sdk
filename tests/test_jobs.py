@@ -5,10 +5,9 @@ from __future__ import annotations
 from typing import Any, Dict
 
 import httpx
-import pytest
 import respx
 
-from tests.conftest import API_KEY, BASE_URL
+from tests.conftest import BASE_URL
 
 
 # ---------------------------------------------------------------------------
@@ -36,6 +35,8 @@ class TestJobsCreate:
             "job_id": "job_test123",
             "status": "pending",
             "source_type": "url",
+            "namespace": "support-center",
+            "document_id": "doc_123",
         }
 
         route = respx.post(JOBS_URL).mock(
@@ -51,6 +52,8 @@ class TestJobsCreate:
         assert job.job_id == "job_test123"
         assert job.source_type == "url"
         assert job.status == "pending"
+        assert job.namespace == "support-center"
+        assert job.document_id == "doc_123"
 
     @respx.mock
     def test_create_with_file_source(
@@ -83,6 +86,8 @@ class TestJobsCreate:
             "job_id": "job_body_check",
             "status": "pending",
             "source_type": "url",
+            "namespace": "support-center",
+            "document_id": "doc_123",
         }
 
         route = respx.post(JOBS_URL).mock(
@@ -93,6 +98,8 @@ class TestJobsCreate:
             source_type="url",
             source_url="https://example.com/doc.pdf",
             data_id="my_data_id",
+            namespace="support-center",
+            document_id="doc_123",
         )
 
         assert route.called
@@ -102,6 +109,8 @@ class TestJobsCreate:
         assert body["source_type"] == "url"
         assert body["source_url"] == "https://example.com/doc.pdf"
         assert body["data_id"] == "my_data_id"
+        assert body["namespace"] == "support-center"
+        assert body["document_id"] == "doc_123"
 
 
 # ---------------------------------------------------------------------------

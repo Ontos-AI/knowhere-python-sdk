@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+from knowhere.types.document import Document, DocumentListResponse
 from knowhere.types.job import Job, JobError, JobResult
 from knowhere.types.params import ParsingParams, WebhookConfig
+from knowhere.types.retrieval import (
+    RetrievalSource,
+    RetrievalQueryResponse,
+    RetrievalResult,
+)
 from knowhere.types.result import (
     BaseChunk,
     Checksum,
@@ -28,6 +34,13 @@ __all__: list[str] = [
     "Job",
     "JobError",
     "JobResult",
+    # document
+    "Document",
+    "DocumentListResponse",
+    # retrieval
+    "RetrievalSource",
+    "RetrievalQueryResponse",
+    "RetrievalResult",
     # params
     "ParsingParams",
     "WebhookConfig",
