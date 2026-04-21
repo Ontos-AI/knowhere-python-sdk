@@ -36,7 +36,7 @@ class Documents(SyncAPIResource):
         """Archive one canonical document by ID."""
         return self._request(
             "POST",
-            f"v1/documents/{document_id}:archive",
+            f"v1/documents/{document_id}/archive",
             cast_to=Document,
         )
 
@@ -69,6 +69,6 @@ class AsyncDocuments(AsyncAPIResource):
         """Archive one canonical document by ID."""
         return await self._request(
             "POST",
-            f"v1/documents/{document_id}:archive",
+            f"v1/documents/{document_id}/archive",
             cast_to=Document,
         )

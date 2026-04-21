@@ -474,14 +474,26 @@ response = client.retrieval.query(
 for result in response.results:
     print(result.content)
     print(result.score)
-    if result.citation:
-        print(result.citation.source_file_name)
-        print(result.citation.section_path)
+    print(result.source.document_id)
+    print(result.source.source_file_name)
+    print(result.source.section_path)
 ```
 
 Retrieval results expose `content`, not the older parse-result `text` field.
 Media results may include `asset_url` when the server can sign the referenced
 artifact.
+
+Each retrieval result uses one canonical source reference shape:
+
+```python
+result.content
+result.chunk_type
+result.score
+result.asset_url  # Optional[str]
+result.source.document_id
+result.source.source_file_name
+result.source.section_path
+```
 
 ### Exclude documents or sections
 

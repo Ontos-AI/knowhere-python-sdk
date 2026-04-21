@@ -79,7 +79,7 @@ class TestDocumentsResource:
 
     @respx.mock
     def test_archive_document_returns_archived_state(self, sync_client: Any) -> None:
-        route = respx.post(f"{DOCUMENTS_URL}/doc_123:archive").mock(
+        route = respx.post(f"{DOCUMENTS_URL}/doc_123/archive").mock(
             return_value=httpx.Response(200, json=_make_document(status="archived"))
         )
 
@@ -96,7 +96,7 @@ class TestDocumentsResource:
         self,
         async_client: Any,
     ) -> None:
-        route = respx.post(f"{DOCUMENTS_URL}/doc_123:archive").mock(
+        route = respx.post(f"{DOCUMENTS_URL}/doc_123/archive").mock(
             return_value=httpx.Response(200, json=_make_document(status="archived"))
         )
 

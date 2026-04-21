@@ -59,8 +59,8 @@ response = client.retrieval.query(
 
 for result in response.results:
     print(result.content)
-    if result.citation:
-        print(result.citation.source_file_name, result.citation.section_path)
+    print(result.score)
+    print(result.source.source_file_name, result.source.section_path)
 ```
 
 Use `document_id` to update or archive a document:

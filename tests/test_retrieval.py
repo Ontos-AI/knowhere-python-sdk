@@ -21,17 +21,11 @@ def _make_retrieval_response() -> Dict[str, Any]:
         "query": "refund policy",
         "results": [
             {
-                "document_id": "doc_123",
-                "chunk_id": "chunk_456",
-                "section_id": "sec_12",
-                "section_path": "Policies / Billing / Refunds",
-                "source_file_name": "refund-policy.md",
                 "chunk_type": "text",
                 "content": "Annual plans may be refunded within 30 days.",
                 "score": 1.0,
-                "citation": {
+                "source": {
                     "document_id": "doc_123",
-                    "chunk_id": "chunk_456",
                     "source_file_name": "refund-policy.md",
                     "section_path": "Policies / Billing / Refunds",
                 },
@@ -78,8 +72,12 @@ class TestRetrievalQuery:
         }
         assert response.namespace == "support-center"
         assert response.results[0].content == "Annual plans may be refunded within 30 days."
-        assert response.results[0].citation is not None
-        assert response.results[0].citation.section_path == "Policies / Billing / Refunds"
+        assert response.results[0].source.document_id == "doc_123"
+        assert response.results[0].source.source_file_name == "refund-policy.md"
+        assert response.results[0].source.section_path == "Policies / Billing / Refunds"
+        assert not hasattr(response.results[0], "citation")
+        assert not hasattr(response.results[0], "chunk_id")
+        assert not hasattr(response.results[0], "section_id")
 
     @respx.mock
     def test_query_omits_defaulted_optional_fields(self, sync_client: Any) -> None:
@@ -109,4 +107,4 @@ class TestRetrievalQuery:
         )
 
         assert route.called
-        assert response.results[0].document_id == "doc_123"
+        assert response.results[0].source.document_id == "doc_123"
