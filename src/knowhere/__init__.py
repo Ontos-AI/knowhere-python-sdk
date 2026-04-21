@@ -35,8 +35,14 @@ from knowhere._exceptions import (
 )
 from knowhere._types import PollProgressCallback, UploadProgressCallback
 from knowhere._version import __version__
+from knowhere.types.document import Document, DocumentListResponse
 from knowhere.types.job import Job, JobError, JobProgress, JobResult
 from knowhere.types.params import ParsingParams, WebhookConfig
+from knowhere.types.retrieval import (
+    RetrievalCitation,
+    RetrievalQueryResponse,
+    RetrievalResult,
+)
 from knowhere.types.result import (
     BaseChunk,
     Checksum,
@@ -87,6 +93,13 @@ __all__: list[str] = [
     "JobError",
     "JobProgress",
     "JobResult",
+    # Document types
+    "Document",
+    "DocumentListResponse",
+    # Retrieval types
+    "RetrievalCitation",
+    "RetrievalQueryResponse",
+    "RetrievalResult",
     # Result types
     "ParseResult",
     "Manifest",

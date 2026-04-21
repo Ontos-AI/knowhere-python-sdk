@@ -12,6 +12,7 @@ Comprehensive reference for every feature, parameter, and pattern in the SDK.
 - [Working with Results](#working-with-results)
 - [Chunk Types](#chunk-types)
 - [Step-by-Step Control (Jobs API)](#step-by-step-control-jobs-api)
+- [Retrieval and Document Lifecycle](#retrieval-and-document-lifecycle)
 - [Async Usage](#async-usage)
 - [Progress Callbacks](#progress-callbacks)
 - [Error Handling](#error-handling)
@@ -316,8 +317,10 @@ from pathlib import Path
 job = client.jobs.create(
     source_type="file",
     file_name="report.pdf",
+    namespace="support-center",
     parsing_params={"model": "advanced", "ocr_enabled": True},
 )
+print(job.document_id)  # Persist this value for update/archive flows.
 
 # Step 2: Upload file to the presigned URL
 client.jobs.upload(job, file=Path("report.pdf"))
@@ -341,6 +344,8 @@ print(result.statistics)
 | `source_type` | `"url" \| "file"` | — | Required. Whether parsing from URL or uploaded file. |
 | `source_url` | `str \| None` | `None` | URL to parse (required when `source_type="url"`). |
 | `file_name` | `str \| None` | `None` | Original filename (used when `source_type="file"`). |
+| `namespace` | `str \| None` | `None` | Retrieval namespace. The server defaults to `"default"` when omitted. |
+| `document_id` | `str \| None` | `None` | Existing document ID when creating an update job. Omit for a new document. |
 | `data_id` | `str \| None` | `None` | Your own correlation/idempotency identifier. |
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration. |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
@@ -351,6 +356,8 @@ Returns a `Job` object:
 job.job_id          # "abc-123"
 job.status          # "pending"
 job.source_type     # "file"
+job.namespace       # "support-center"
+job.document_id     # "doc_..." — persist this for updates and archive calls
 job.upload_url      # presigned URL (for file uploads)
 job.upload_headers  # headers to include in the upload request
 job.expires_in      # seconds until upload URL expires
@@ -407,6 +414,107 @@ result = client.jobs.load("https://storage.example.com/result.zip")
 
 ---
 
+## Retrieval and Document Lifecycle
+
+The retrieval APIs operate on canonical documents that are published after a
+job completes. For new documents, the server generates `document_id` during
+`jobs.create()`. Store that ID in your application if you need to update or
+archive the same document later.
+
+### Create a retrievable document
+
+```python
+job = client.jobs.create(
+    source_type="url",
+    source_url="https://example.com/manual.pdf",
+    namespace="support-center",
+)
+
+print(job.document_id)  # "doc_..."
+```
+
+For file uploads, the flow is the same except that you upload the file before
+polling:
+
+```python
+job = client.jobs.create(
+    source_type="file",
+    file_name="manual.pdf",
+    namespace="support-center",
+)
+client.jobs.upload(job, file=Path("manual.pdf"))
+job_result = client.jobs.wait(job.job_id)
+```
+
+### Update an existing document
+
+Pass the prior `document_id` to create an update job. If `namespace` is omitted,
+the API resolves the namespace from the existing document.
+
+```python
+update_job = client.jobs.create(
+    source_type="url",
+    source_url="https://example.com/manual-v2.pdf",
+    document_id=job.document_id,
+)
+```
+
+The API rejects concurrent non-terminal jobs for the same document with a
+retryable `ConflictError` using the server error code `ABORTED`.
+
+### Query retrieval results
+
+```python
+response = client.retrieval.query(
+    namespace="support-center",
+    query="How do I pair a Bluetooth headset?",
+    top_k=5,
+)
+
+for result in response.results:
+    print(result.content)
+    print(result.score)
+    if result.citation:
+        print(result.citation.source_file_name)
+        print(result.citation.section_path)
+```
+
+Retrieval results expose `content`, not the older parse-result `text` field.
+Media results may include `asset_url` when the server can sign the referenced
+artifact.
+
+### Exclude documents or sections
+
+Use exclusions for follow-up queries that should avoid already-used context.
+
+```python
+response = client.retrieval.query(
+    namespace="support-center",
+    query="battery charging",
+    top_k=10,
+    exclude_document_ids=["doc_old"],
+    exclude_sections=[
+        {"document_id": "doc_123", "section_path": "Appendix / Legal"}
+    ],
+)
+```
+
+### List, get, and archive documents
+
+```python
+document_list = client.documents.list(namespace="support-center")
+for document in document_list.documents:
+    print(document.document_id, document.status, document.source_file_name)
+
+document = client.documents.get("doc_123")
+print(document.current_job_result_id)
+
+archived = client.documents.archive("doc_123")
+print(archived.status)  # "archived"
+```
+
+---
+
 ## Async Usage
 
 Every method available on `Knowhere` has an async counterpart on `AsyncKnowhere`:
@@ -428,6 +536,13 @@ async def main():
         )
         job_result = await client.jobs.wait(job.job_id)
         result = await client.jobs.load(job_result)
+
+        retrieval = await client.retrieval.query(
+            namespace="support-center",
+            query="refund policy",
+            top_k=5,
+        )
+        print(retrieval.results[0].content)
 
 asyncio.run(main())
 ```

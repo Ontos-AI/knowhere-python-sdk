@@ -34,6 +34,8 @@ class Jobs(SyncAPIResource):
         source_type: str,
         source_url: Optional[str] = None,
         file_name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        document_id: Optional[str] = None,
         data_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
@@ -44,6 +46,8 @@ class Jobs(SyncAPIResource):
             source_type: ``"url"`` or ``"file"``.
             source_url: URL to parse (required when ``source_type="url"``).
             file_name: Original filename (used when ``source_type="file"``).
+            namespace: Retrieval namespace. Defaults to the server ``default``.
+            document_id: Existing document ID when creating an update job.
             data_id: Optional idempotency / correlation identifier.
             parsing_params: Optional parsing configuration.
             webhook: Optional webhook configuration.
@@ -56,6 +60,10 @@ class Jobs(SyncAPIResource):
             body["source_url"] = source_url
         if file_name is not None:
             body["file_name"] = file_name
+        if namespace is not None:
+            body["namespace"] = namespace
+        if document_id is not None:
+            body["document_id"] = document_id
         if data_id is not None:
             body["data_id"] = data_id
         if parsing_params is not None:
@@ -158,6 +166,8 @@ class AsyncJobs(AsyncAPIResource):
         source_type: str,
         source_url: Optional[str] = None,
         file_name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        document_id: Optional[str] = None,
         data_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
@@ -168,6 +178,10 @@ class AsyncJobs(AsyncAPIResource):
             body["source_url"] = source_url
         if file_name is not None:
             body["file_name"] = file_name
+        if namespace is not None:
+            body["namespace"] = namespace
+        if document_id is not None:
+            body["document_id"] = document_id
         if data_id is not None:
             body["data_id"] = data_id
         if parsing_params is not None:

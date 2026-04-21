@@ -45,6 +45,18 @@ class TestJobModel:
         assert job.source_type == "url"
         assert job.upload_url is None
 
+    def test_from_dict_with_document_scope(self) -> None:
+        data: Dict[str, Any] = {
+            "job_id": "job_scoped",
+            "status": "pending",
+            "source_type": "url",
+            "namespace": "support-center",
+            "document_id": "doc_123",
+        }
+        job: Job = Job(**data)
+        assert job.namespace == "support-center"
+        assert job.document_id == "doc_123"
+
     def test_from_dict_with_upload(self) -> None:
         data: Dict[str, Any] = {
             "job_id": "job_2",
@@ -148,10 +160,14 @@ class TestJobResultModel:
             job_id="job_ok",
             status="done",
             source_type="file",
+            namespace="support-center",
+            document_id="doc_123",
             result_url="https://storage.example.com/result.zip",
             duration_seconds=3.5,
             credits_spent=1.0,
         )
+        assert result.namespace == "support-center"
+        assert result.document_id == "doc_123"
         assert result.result_url == "https://storage.example.com/result.zip"
         assert result.duration_seconds == 3.5
 

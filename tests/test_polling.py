@@ -208,7 +208,7 @@ class TestPollOnProgressCallback:
     @respx.mock
     def test_callback_called_on_each_poll(self, sync_client: Any) -> None:
         job_id: str = "job_progress"
-        route = respx.get(f"{JOBS_URL}/{job_id}").mock(
+        respx.get(f"{JOBS_URL}/{job_id}").mock(
             side_effect=[
                 httpx.Response(
                     200, json=_make_status_response(job_id, "running")

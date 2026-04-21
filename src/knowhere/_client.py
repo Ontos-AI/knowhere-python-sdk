@@ -19,7 +19,9 @@ from knowhere._types import (
     PollProgressCallback,
     UploadProgressCallback,
 )
+from knowhere.resources.documents import AsyncDocuments, Documents
 from knowhere.resources.jobs import AsyncJobs, Jobs
+from knowhere.resources.retrieval import AsyncRetrieval, Retrieval
 from knowhere.types.job import Job, JobResult
 from knowhere.types.params import ParsingParams, WebhookConfig
 from knowhere.types.result import ParseResult
@@ -42,6 +44,16 @@ class Knowhere(SyncAPIClient):
         """Access the jobs resource namespace."""
         return Jobs(self)
 
+    @cached_property
+    def retrieval(self) -> Retrieval:
+        """Access the retrieval resource namespace."""
+        return Retrieval(self)
+
+    @cached_property
+    def documents(self) -> Documents:
+        """Access the documents resource namespace."""
+        return Documents(self)
+
     # -- overloaded parse signatures --
 
     @overload
@@ -50,6 +62,8 @@ class Knowhere(SyncAPIClient):
         *,
         url: str,
         data_id: Optional[str] = ...,
+        namespace: Optional[str] = ...,
+        document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
         poll_interval: float = ...,
@@ -66,6 +80,8 @@ class Knowhere(SyncAPIClient):
         file: Union[Path, BinaryIO, bytes],
         file_name: Optional[str] = ...,
         data_id: Optional[str] = ...,
+        namespace: Optional[str] = ...,
+        document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
         poll_interval: float = ...,
@@ -82,6 +98,8 @@ class Knowhere(SyncAPIClient):
         file: Optional[Union[Path, BinaryIO, bytes]] = None,
         file_name: Optional[str] = None,
         data_id: Optional[str] = None,
+        namespace: Optional[str] = None,
+        document_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
@@ -105,6 +123,8 @@ class Knowhere(SyncAPIClient):
                 source_type="url",
                 source_url=url,
                 data_id=data_id,
+                namespace=namespace,
+                document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
             )
@@ -116,6 +136,8 @@ class Knowhere(SyncAPIClient):
                 source_type="file",
                 file_name=resolved_name,
                 data_id=data_id,
+                namespace=namespace,
+                document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
             )
@@ -149,12 +171,24 @@ class AsyncKnowhere(AsyncAPIClient):
         """Access the async jobs resource namespace."""
         return AsyncJobs(self)
 
+    @cached_property
+    def retrieval(self) -> AsyncRetrieval:
+        """Access the async retrieval resource namespace."""
+        return AsyncRetrieval(self)
+
+    @cached_property
+    def documents(self) -> AsyncDocuments:
+        """Access the async documents resource namespace."""
+        return AsyncDocuments(self)
+
     @overload
     async def parse(
         self,
         *,
         url: str,
         data_id: Optional[str] = ...,
+        namespace: Optional[str] = ...,
+        document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
         poll_interval: float = ...,
@@ -171,6 +205,8 @@ class AsyncKnowhere(AsyncAPIClient):
         file: Union[Path, BinaryIO, bytes],
         file_name: Optional[str] = ...,
         data_id: Optional[str] = ...,
+        namespace: Optional[str] = ...,
+        document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
         poll_interval: float = ...,
@@ -187,6 +223,8 @@ class AsyncKnowhere(AsyncAPIClient):
         file: Optional[Union[Path, BinaryIO, bytes]] = None,
         file_name: Optional[str] = None,
         data_id: Optional[str] = None,
+        namespace: Optional[str] = None,
+        document_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
@@ -206,6 +244,8 @@ class AsyncKnowhere(AsyncAPIClient):
                 source_type="url",
                 source_url=url,
                 data_id=data_id,
+                namespace=namespace,
+                document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
             )
@@ -217,6 +257,8 @@ class AsyncKnowhere(AsyncAPIClient):
                 source_type="file",
                 file_name=resolved_name,
                 data_id=data_id,
+                namespace=namespace,
+                document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
             )
