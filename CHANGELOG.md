@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.2.1...v0.3.0) (2026-04-21)
+
+
+### Features
+
+* add retrieval service sdk clients ([bceef5c](https://github.com/Ontos-AI/knowhere-python-sdk/commit/bceef5cf379dba39543244bd6ca86262a536fb9b))
+* integrate retrieval service v1 in Python SDK ([bce7aa8](https://github.com/Ontos-AI/knowhere-python-sdk/commit/bce7aa8dbf069d5880b92c6f9d8996878251f7cb))
+
 ## [0.2.1](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.2.0...v0.2.1) (2026-04-09)
 
 
