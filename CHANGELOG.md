@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.3.0...v0.3.1) (2026-04-22)
+
+
+### Documentation
+
+* clarify ParseResult document scope ([861084e](https://github.com/Ontos-AI/knowhere-python-sdk/commit/861084e34144987994fa618ac0db262ce681b5a8))
+* clarify ParseResult document scope ([bb14ad4](https://github.com/Ontos-AI/knowhere-python-sdk/commit/bb14ad4077c41cbe74a5dd155995d6f9937962b8))
+
 ## [0.3.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.2.1...v0.3.0) (2026-04-21)
 
 
