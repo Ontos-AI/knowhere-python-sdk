@@ -272,6 +272,8 @@ class ParseResult:
     kb_csv: Optional[str]
     hierarchy_view_html: Optional[str]
     raw_zip: bytes
+    namespace: Optional[str]
+    document_id: Optional[str]
 
     def __init__(
         self,
@@ -285,6 +287,8 @@ class ParseResult:
         kb_csv: Optional[str],
         hierarchy_view_html: Optional[str],
         raw_zip: bytes,
+        namespace: Optional[str] = None,
+        document_id: Optional[str] = None,
     ) -> None:
         self.manifest = manifest
         self.chunks = chunks
@@ -295,6 +299,8 @@ class ParseResult:
         self.kb_csv = kb_csv
         self.hierarchy_view_html = hierarchy_view_html
         self.raw_zip = raw_zip
+        self.namespace = namespace
+        self.document_id = document_id
 
     # -- convenience properties --
 

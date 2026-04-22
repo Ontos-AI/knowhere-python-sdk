@@ -145,8 +145,12 @@ class Jobs(SyncAPIResource):
             if not job_result.result_url:
                 raise InvalidStateError("JobResult does not have a result_url.")
             result_url: str = job_result.result_url
+            namespace: Optional[str] = job_result.namespace
+            document_id: Optional[str] = job_result.document_id
         else:
             result_url = job_result
+            namespace = None
+            document_id = None
 
         response: httpx.Response = self._client._client.get(
             result_url, timeout=self._client.upload_timeout
@@ -154,7 +158,10 @@ class Jobs(SyncAPIResource):
         response.raise_for_status()
         zip_bytes: bytes = response.content
 
-        return parseResultZip(zip_bytes, verify_checksum=verify_checksum)
+        parsed_result = parseResultZip(zip_bytes, verify_checksum=verify_checksum)
+        parsed_result.namespace = namespace
+        parsed_result.document_id = document_id
+        return parsed_result
 
 
 class AsyncJobs(AsyncAPIResource):
@@ -251,8 +258,12 @@ class AsyncJobs(AsyncAPIResource):
             if not job_result.result_url:
                 raise InvalidStateError("JobResult does not have a result_url.")
             result_url: str = job_result.result_url
+            namespace: Optional[str] = job_result.namespace
+            document_id: Optional[str] = job_result.document_id
         else:
             result_url = job_result
+            namespace = None
+            document_id = None
 
         response: httpx.Response = await self._client._client.get(
             result_url, timeout=self._client.upload_timeout
@@ -260,4 +271,7 @@ class AsyncJobs(AsyncAPIResource):
         response.raise_for_status()
         zip_bytes: bytes = response.content
 
-        return parseResultZip(zip_bytes, verify_checksum=verify_checksum)
+        parsed_result = parseResultZip(zip_bytes, verify_checksum=verify_checksum)
+        parsed_result.namespace = namespace
+        parsed_result.document_id = document_id
+        return parsed_result
