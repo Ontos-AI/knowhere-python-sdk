@@ -124,6 +124,8 @@ result = client.parse(
 
 print(result.manifest.source_file_name)  # "report.pdf"
 print(len(result.chunks))                # 152
+print(result.namespace)                  # "default" or your explicit namespace
+print(result.document_id)                # Published canonical document id
 ```
 
 ### Access different chunk types
