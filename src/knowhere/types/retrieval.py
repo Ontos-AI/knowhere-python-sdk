@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional, TypedDict
 
 from pydantic import BaseModel
+
+
+RetrievalChannel = Literal["path", "content", "term"]
+RetrievalFilterMode = Literal["delete", "keep"]
+
+
+class RetrievalSectionExclusion(TypedDict):
+    """Section exclusion for follow-up retrieval queries."""
+
+    document_id: str
+    section_path: str
 
 
 class RetrievalSource(BaseModel):
@@ -30,4 +41,5 @@ class RetrievalQueryResponse(BaseModel):
 
     namespace: str
     query: str
+    router_used: Optional[str] = None
     results: list[RetrievalResult]

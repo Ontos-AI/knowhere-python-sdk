@@ -36,7 +36,6 @@ class TestJobsCreate:
             "status": "pending",
             "source_type": "url",
             "namespace": "support-center",
-            "document_id": "doc_123",
         }
 
         route = respx.post(JOBS_URL).mock(
@@ -53,7 +52,7 @@ class TestJobsCreate:
         assert job.source_type == "url"
         assert job.status == "pending"
         assert job.namespace == "support-center"
-        assert job.document_id == "doc_123"
+        assert not hasattr(job, "document_id")
 
     @respx.mock
     def test_create_with_file_source(
@@ -87,7 +86,6 @@ class TestJobsCreate:
             "status": "pending",
             "source_type": "url",
             "namespace": "support-center",
-            "document_id": "doc_123",
         }
 
         route = respx.post(JOBS_URL).mock(
@@ -284,6 +282,8 @@ class TestJobsLoad:
             job_id="job_load",
             status="done",
             source_type="url",
+            namespace="support-center",
+            document_id="doc_123",
             result_url=result_url,
         )
 
@@ -293,3 +293,5 @@ class TestJobsLoad:
 
         assert route.called
         assert parse_result.manifest is not None
+        assert parse_result.namespace == "support-center"
+        assert parse_result.document_id == "doc_123"

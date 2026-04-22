@@ -39,6 +39,9 @@ from knowhere.types.document import Document, DocumentListResponse
 from knowhere.types.job import Job, JobError, JobProgress, JobResult
 from knowhere.types.params import ParsingParams, WebhookConfig
 from knowhere.types.retrieval import (
+    RetrievalChannel,
+    RetrievalFilterMode,
+    RetrievalSectionExclusion,
     RetrievalSource,
     RetrievalQueryResponse,
     RetrievalResult,
@@ -97,6 +100,9 @@ __all__: list[str] = [
     "Document",
     "DocumentListResponse",
     # Retrieval types
+    "RetrievalChannel",
+    "RetrievalFilterMode",
+    "RetrievalSectionExclusion",
     "RetrievalSource",
     "RetrievalQueryResponse",
     "RetrievalResult",

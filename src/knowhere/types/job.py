@@ -41,7 +41,6 @@ class Job(BaseModel):
     status: str
     source_type: str
     namespace: Optional[str] = None
-    document_id: Optional[str] = None
     data_id: Optional[str] = None
     created_at: Optional[datetime] = None
     upload_url: Optional[str] = None

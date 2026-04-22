@@ -42,6 +42,8 @@ def _make_done_response(job_id: str, result_url: str) -> Dict[str, Any]:
         "job_id": job_id,
         "status": "done",
         "source_type": "url",
+        "namespace": "support-center",
+        "document_id": "doc_123",
         "result_url": result_url,
     }
 
@@ -96,6 +98,8 @@ class TestParseWithUrl:
 
         assert parse_result.manifest is not None
         assert parse_result.manifest.job_id == "job_test123"
+        assert parse_result.namespace == "support-center"
+        assert parse_result.document_id == "doc_123"
 
 
 # ---------------------------------------------------------------------------

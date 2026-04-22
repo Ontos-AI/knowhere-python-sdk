@@ -35,8 +35,9 @@ for chunk in result.text_chunks:
 ## Retrieval and document lifecycle
 
 New documents are published into a retrieval namespace. The server returns a
-stable `document_id` when you create a job; persist that value if you need to
-update or archive the same document later.
+stable `document_id` after the job is published. `client.jobs.create(...)`
+does not return a usable `document_id`; persist `job_result.document_id` if you
+need to update or archive the same document later.
 
 ```python
 job = client.jobs.create(
@@ -45,7 +46,11 @@ job = client.jobs.create(
     namespace="support-center",
 )
 
-print(job.document_id)  # "doc_..."
+job_result = client.jobs.wait(job.job_id)
+document_id = job_result.document_id
+
+if document_id is None:
+    raise RuntimeError("Expected document_id after successful publication.")
 ```
 
 After the job is done and published, query the canonical document content:
@@ -55,7 +60,12 @@ response = client.retrieval.query(
     namespace="support-center",
     query="How do I reset Bluetooth pairing?",
     top_k=5,
+    channels=["path", "term"],
+    filter_mode="keep",
+    signal_paths=["Bluetooth", "Pairing"],
 )
+
+print(response.router_used)
 
 for result in response.results:
     print(result.content)
@@ -69,13 +79,13 @@ Use `document_id` to update or archive a document:
 update_job = client.jobs.create(
     source_type="url",
     source_url="https://example.com/manual-v2.pdf",
-    document_id=job.document_id,
+    document_id=document_id,
 )
 
-document = client.documents.get(job.document_id)
+document = client.documents.get(document_id)
 print(document.status)
 
-client.documents.archive(job.document_id)
+client.documents.archive(document_id)
 ```
 
 You can also list documents in a namespace:
@@ -177,13 +187,13 @@ job = client.jobs.create(
     parsing_params={"model": "advanced", "ocr_enabled": True},
 )
 
-print(job.document_id)  # Persist this to update/archive the document later.
-
 # Step 2: Upload file to presigned URL
 client.jobs.upload(job, file=Path("report.pdf"))
 
 # Step 3: Poll until done (adaptive backoff)
 job_result = client.jobs.wait(job.job_id, poll_interval=10.0, poll_timeout=1800.0)
+
+print(job_result.document_id)  # Persist this to update/archive the document later.
 
 # Step 4: Download and parse results
 result = client.jobs.load(job_result)

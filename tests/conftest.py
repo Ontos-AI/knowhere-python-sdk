@@ -72,7 +72,6 @@ def mock_job_response() -> Dict[str, Any]:
         "status": "waiting-file",
         "source_type": "file",
         "namespace": "default",
-        "document_id": "doc_test123",
         "data_id": None,
         "created_at": "2025-01-01T00:00:00Z",
         "upload_url": "https://storage.example.com/upload?token=abc",

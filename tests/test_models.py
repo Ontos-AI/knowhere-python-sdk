@@ -55,7 +55,7 @@ class TestJobModel:
         }
         job: Job = Job(**data)
         assert job.namespace == "support-center"
-        assert job.document_id == "doc_123"
+        assert "document_id" not in job.model_dump()
 
     def test_from_dict_with_upload(self) -> None:
         data: Dict[str, Any] = {
@@ -716,6 +716,11 @@ class TestParseResult:
         assert stats is not None
         assert stats.total_chunks == 3
         assert stats.text_chunks == 1
+
+    def test_document_scope_defaults_to_none(self) -> None:
+        result: ParseResult = _build_parse_result()
+        assert result.namespace is None
+        assert result.document_id is None
 
     def test_raw_zip_accessible(self) -> None:
         result: ParseResult = _build_parse_result()

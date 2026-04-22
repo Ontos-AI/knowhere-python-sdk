@@ -19,6 +19,7 @@ def _make_retrieval_response() -> Dict[str, Any]:
     return {
         "namespace": "support-center",
         "query": "refund policy",
+        "router_used": "discovery+agent",
         "results": [
             {
                 "chunk_type": "text",
@@ -47,6 +48,14 @@ class TestRetrievalQuery:
             query="refund policy",
             namespace="support-center",
             top_k=5,
+            data_type=6,
+            signal_paths=["Billing", "Refunds"],
+            filter_mode="keep",
+            channels=["path", "term"],
+            channel_weights={"path": 2.0, "term": 0.5},
+            rerank=True,
+            threshold=0.2,
+            internal_recall_k=25,
             exclude_document_ids=["doc_old"],
             exclude_sections=[
                 {
@@ -62,6 +71,14 @@ class TestRetrievalQuery:
             "query": "refund policy",
             "namespace": "support-center",
             "top_k": 5,
+            "data_type": 6,
+            "signal_paths": ["Billing", "Refunds"],
+            "filter_mode": "keep",
+            "channels": ["path", "term"],
+            "channel_weights": {"path": 2.0, "term": 0.5},
+            "rerank": True,
+            "threshold": 0.2,
+            "internal_recall_k": 25,
             "exclude_document_ids": ["doc_old"],
             "exclude_sections": [
                 {
@@ -71,6 +88,7 @@ class TestRetrievalQuery:
             ],
         }
         assert response.namespace == "support-center"
+        assert response.router_used == "discovery+agent"
         assert response.results[0].content == "Annual plans may be refunded within 30 days."
         assert response.results[0].source.document_id == "doc_123"
         assert response.results[0].source.source_file_name == "refund-policy.md"
@@ -107,4 +125,5 @@ class TestRetrievalQuery:
         )
 
         assert route.called
+        assert response.router_used == "discovery+agent"
         assert response.results[0].source.document_id == "doc_123"
