@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.3.1...v0.3.2) (2026-04-23)
+
+
+### Chores
+
+* harden python sdk OSS surface ([e7d9779](https://github.com/Ontos-AI/knowhere-python-sdk/commit/e7d9779502327d2bd9e4f27e666244d34f8fafb7))
+* harden Python SDK OSS surface ([a9396cd](https://github.com/Ontos-AI/knowhere-python-sdk/commit/a9396cda70eabcba66172884e38045caefc85a01))
+
 ## [0.3.1](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.3.0...v0.3.1) (2026-04-22)
 
 
