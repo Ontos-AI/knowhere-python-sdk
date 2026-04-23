@@ -273,6 +273,12 @@ We publish stable releases to [PyPI](https://pypi.org/project/knowhere-python-sd
 - [pydantic](https://docs.pydantic.dev/) `>=2.0.0,<3.0`
 - [typing-extensions](https://pypi.org/project/typing-extensions/) `>=4.7.0`
 
+## Community
+
+- Contributing guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Security policy: [SECURITY.md](./SECURITY.md)
+- Code of conduct: [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+
 ## License
 
 MIT
