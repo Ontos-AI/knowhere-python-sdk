@@ -18,7 +18,7 @@ class TestRedactSensitiveHeaders:
 
     def test_redacts_authorization_bearer(self) -> None:
         headers: Dict[str, str] = {
-            "Authorization": "Bearer sk_live_abc123xyz",
+            "Authorization": "Bearer sk_example_redacted_token",
             "Content-Type": "application/json",
         }
         redacted: Dict[str, str] = redactSensitiveHeaders(headers)
