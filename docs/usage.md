@@ -521,6 +521,22 @@ for document in document_list.documents:
 document = client.documents.get("doc_123")
 print(document.current_job_result_id)
 
+chunks = client.documents.list_chunks(
+    "doc_123",
+    page=1,
+    page_size=50,
+    chunk_type="text",
+)
+for chunk in chunks.chunks:
+    print(chunk.id, chunk.content)
+
+image_chunk = client.documents.get_chunk(
+    "doc_123",
+    "dchk_123",
+    include_asset_urls=True,
+)
+print(image_chunk.chunk.asset_url)
+
 archived = client.documents.archive("doc_123")
 print(archived.status)  # "archived"
 ```
