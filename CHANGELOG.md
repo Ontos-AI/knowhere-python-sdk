@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.3.2...v0.4.0) (2026-04-27)
+
+
+### Features
+
+* add document chunks resource methods ([73094d4](https://github.com/Ontos-AI/knowhere-python-sdk/commit/73094d4f95ef693785fa3965f6f2a223dfd2a350))
+
 ## [0.3.2](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.3.1...v0.3.2) (2026-04-23)
 
 
