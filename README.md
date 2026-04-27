@@ -85,6 +85,21 @@ update_job = client.jobs.create(
 document = client.documents.get(document_id)
 print(document.status)
 
+chunks = client.documents.list_chunks(
+    document_id,
+    page=1,
+    page_size=50,
+    chunk_type="text",
+)
+print(chunks.pagination.total)
+if chunks.chunks:
+    chunk = client.documents.get_chunk(
+        document_id,
+        chunks.chunks[0].id,
+        include_asset_urls=True,
+    )
+    print(chunk.chunk.content)
+
 client.documents.archive(document_id)
 ```
 
