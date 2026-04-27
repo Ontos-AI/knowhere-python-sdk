@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "knowhere-python-sdk"
-version = "0.3.2"
+version = "0.4.0"
 description = "Official Python SDK for the Knowhere document parsing API"
 readme = "README.md"
 license = "MIT"
