@@ -13,13 +13,13 @@ from knowhere._exceptions import ChecksumError, KnowhereError
 from knowhere._logging import getLogger
 from knowhere.types.result import (
     Chunk,
+    DocNav,
     ImageChunk,
     Manifest,
     ParseResult,
     SlimChunk,
     TableChunk,
     TextChunk,
-    TextChunkTokens,
 )
 
 _logger = getLogger()
@@ -81,38 +81,6 @@ def _extractFilePath(raw: Dict[str, Any]) -> Optional[str]:
     return fallback
 
 
-def _normalizeTokenList(raw_tokens: List[Any]) -> List[str]:
-    """Return a string-only token list with empty values removed."""
-    normalized_tokens: List[str] = []
-    for raw_token in raw_tokens:
-        token_text: str = str(raw_token).strip()
-        if token_text:
-            normalized_tokens.append(token_text)
-    return normalized_tokens
-
-
-def _parseTextChunkTokens(
-    raw_tokens: Any,
-    *,
-    chunk_id: str,
-) -> Optional[TextChunkTokens]:
-    """Normalize text chunk tokens from the current backend payload."""
-    if raw_tokens is None:
-        return None
-    if isinstance(raw_tokens, bool):
-        raise KnowhereError(
-            f"Invalid tokens payload for text chunk '{chunk_id}': expected list[str], got bool."
-        )
-    if isinstance(raw_tokens, list):
-        return _normalizeTokenList(raw_tokens)
-
-    raise KnowhereError(
-        "Invalid tokens payload for text chunk "
-        f"'{chunk_id}': expected list[str], "
-        f"got {type(raw_tokens).__name__}."
-    )
-
-
 def _buildChunks(
     raw_chunks: List[Dict[str, Any]],
     zf: zipfile.ZipFile,
@@ -125,58 +93,39 @@ def _buildChunks(
 
         if chunk_type == "image":
             image_data: bytes = b""
-            # file_path may be at top level, inside metadata, or use path as fallback
             file_path: Optional[str] = _extractFilePath(raw)
             if file_path:
                 image_data = _readZipBytes(zf, file_path) or b""
-            metadata: Dict[str, Any] = raw.get("metadata", {})
             chunk: Chunk = ImageChunk(
                 chunk_id=raw.get("chunk_id", ""),
                 type="image",
                 content=raw.get("content", ""),
                 path=raw.get("path"),
-                page_nums=metadata.get("page_nums", raw.get("page_nums")),
-                length=metadata.get("length", raw.get("length", 0)),
                 file_path=file_path,
-                original_name=metadata.get("original_name", raw.get("original_name")),
-                summary=metadata.get("summary", raw.get("summary")),
                 data=image_data,
+                metadata=raw.get("metadata", {}),
             )
         elif chunk_type == "table":
             table_html: str = ""
             file_path = _extractFilePath(raw)
             if file_path:
                 table_html = _readZipText(zf, file_path) or ""
-            metadata = raw.get("metadata", {})
             chunk = TableChunk(
                 chunk_id=raw.get("chunk_id", ""),
                 type="table",
                 content=raw.get("content", ""),
                 path=raw.get("path"),
-                page_nums=metadata.get("page_nums", raw.get("page_nums")),
-                length=metadata.get("length", raw.get("length", 0)),
                 file_path=file_path,
-                original_name=metadata.get("original_name", raw.get("original_name")),
-                table_type=metadata.get("table_type", raw.get("table_type")),
-                summary=metadata.get("summary", raw.get("summary")),
                 html=table_html,
+                metadata=raw.get("metadata", {}),
             )
         else:
-            metadata = raw.get("metadata", {})
-            chunk_id: str = raw.get("chunk_id", "")
-            raw_tokens: Any = metadata.get("tokens", raw.get("tokens"))
             chunk = TextChunk(
-                chunk_id=chunk_id,
+                chunk_id=raw.get("chunk_id", ""),
                 type="text",
                 content=raw.get("content", ""),
                 path=raw.get("path"),
-                page_nums=metadata.get("page_nums", raw.get("page_nums")),
-                length=metadata.get("length", raw.get("length", 0)),
-                tokens=_parseTextChunkTokens(raw_tokens, chunk_id=chunk_id),
-                keywords=metadata.get("keywords", raw.get("keywords")),
-                summary=metadata.get("summary", raw.get("summary")),
-                connect_to=metadata.get("connect_to", raw.get("connect_to")),
-                relationships=metadata.get("relationships", raw.get("relationships")),
+                metadata=raw.get("metadata", {}),
             )
 
         chunks.append(chunk)
@@ -229,7 +178,15 @@ def parseResultZip(
     # -- Full markdown --
     full_markdown: str = _readZipText(zf, "full.md") or ""
 
-    # -- Hierarchy --
+    # -- DocNav (current worker output) --
+    doc_nav_text: Optional[str] = _readZipText(zf, "doc_nav.json")
+    doc_nav: Optional[DocNav] = (
+        DocNav.model_validate(json.loads(doc_nav_text))
+        if doc_nav_text
+        else None
+    )
+
+    # -- Hierarchy (legacy — current worker no longer emits this) --
     hierarchy_text: Optional[str] = _readZipText(zf, "hierarchy.json")
     hierarchy: Optional[Any] = (
         json.loads(hierarchy_text) if hierarchy_text else None
@@ -263,11 +220,13 @@ def parseResultZip(
     return ParseResult(
         manifest=manifest,
         chunks=chunks,
-        chunks_slim=chunks_slim,
         full_markdown=full_markdown,
+        raw_zip=zip_bytes,
+        doc_nav=doc_nav,
+        # Legacy — the current worker no longer emits these files
+        chunks_slim=chunks_slim,
         hierarchy=hierarchy,
         toc_hierarchies=toc_hierarchies,
         kb_csv=kb_csv,
         hierarchy_view_html=hierarchy_view_html,
-        raw_zip=zip_bytes,
     )

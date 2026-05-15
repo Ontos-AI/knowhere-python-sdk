@@ -22,6 +22,7 @@ class Retrieval(SyncAPIResource):
         query: str,
         namespace: Optional[str] = None,
         top_k: Optional[int] = None,
+        use_agentic: Optional[bool] = None,
         data_type: Optional[int] = None,
         signal_paths: Optional[list[str]] = None,
         filter_mode: Optional[RetrievalFilterMode] = None,
@@ -39,6 +40,8 @@ class Retrieval(SyncAPIResource):
             body["namespace"] = namespace
         if top_k is not None:
             body["top_k"] = top_k
+        if use_agentic is not None:
+            body["use_agentic"] = use_agentic
         if data_type is not None:
             body["data_type"] = data_type
         if signal_paths is not None:
@@ -77,6 +80,7 @@ class AsyncRetrieval(AsyncAPIResource):
         query: str,
         namespace: Optional[str] = None,
         top_k: Optional[int] = None,
+        use_agentic: Optional[bool] = None,
         data_type: Optional[int] = None,
         signal_paths: Optional[list[str]] = None,
         filter_mode: Optional[RetrievalFilterMode] = None,
@@ -94,6 +98,8 @@ class AsyncRetrieval(AsyncAPIResource):
             body["namespace"] = namespace
         if top_k is not None:
             body["top_k"] = top_k
+        if use_agentic is not None:
+            body["use_agentic"] = use_agentic
         if data_type is not None:
             body["data_type"] = data_type
         if signal_paths is not None:

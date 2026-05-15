@@ -14,6 +14,7 @@ import pytest
 from knowhere._exceptions import ChecksumError, KnowhereError
 from knowhere.lib.result_parser import parseResultZip
 from knowhere.types.result import (
+    DocNav,
     ImageChunk,
     Manifest,
     ParseResult,
@@ -34,29 +35,55 @@ CHUNKS_LIST: List[Dict[str, Any]] = [
         "type": "text",
         "content": "Hello world",
         "path": "test/section1",
-        "length": 11,
-        "tokens": ["Hello", "world"],
-        "keywords": ["hello"],
-        "summary": "A greeting",
-        "relationships": [],
     },
     {
         "chunk_id": "IMAGE_test1",
         "type": "image",
         "content": "A test image",
         "path": "test/images",
-        "length": 12,
         "file_path": "images/IMAGE_test1.jpg",
-        "original_name": "test-image.jpg",
-        "summary": "Test image",
     },
 ]
-
-TEXT_TOKENS_LIST: List[str] = ["Ashish", "Vaswani", "attention", "transformer"]
 
 MARKDOWN: str = "# Test\n\nHello world"
 IMAGE_BYTES: bytes = b"\xff\xd8\xff\xe0"
 TABLE_HTML: str = "<table><tr><td>Optimized</td></tr></table>"
+
+DOC_NAV_JSON: Dict[str, Any] = {
+    "sections": [
+        {
+            "title": "Introduction",
+            "path": "Default_Root/test.pdf-->Introduction",
+            "level": 1,
+            "summary": "Overview of the topic",
+            "chunk_count": 3,
+            "children": [
+                {
+                    "title": "Background",
+                    "path": "Default_Root/test.pdf-->Introduction-->Background",
+                    "level": 2,
+                    "summary": "Historical context",
+                    "chunk_count": 2,
+                    "children": [],
+                }
+            ],
+        }
+    ],
+    "resources": {
+        "images": [
+            {
+                "path": "images/IMAGE_test1.jpg",
+                "summary": "Test image summary",
+            }
+        ],
+        "tables": [
+            {
+                "path": "tables/table-optimized.html",
+                "summary": "Optimized table",
+            }
+        ],
+    },
+}
 
 
 def _build_zip(
@@ -160,48 +187,20 @@ def _make_optimized_chunks() -> List[Dict[str, Any]]:
             "type": "text",
             "content": "Text chunk with embedded resources.",
             "path": "Default_Root/optimized.pdf-->Section 1",
-            "metadata": {
-                "length": 35,
-                "summary": "",
-                "page_nums": [1, 2],
-                "tokens": ["Text", "chunk"],
-                "keywords": ["optimized"],
-                "connect_to": [
-                    {
-                        "target": "image_chunk_optimized",
-                        "relation": "embeds",
-                        "ref": "[images/IMAGE_test1.jpg]",
-                    }
-                ],
-            },
         },
         {
             "chunk_id": "image_chunk_optimized",
             "type": "image",
             "content": "[images/IMAGE_test1.jpg]",
             "path": "images/IMAGE_test1.jpg",
-            "metadata": {
-                "length": 1,
-                "summary": "Optimized image chunk",
-                "page_nums": [2],
-                "file_path": "images/IMAGE_test1.jpg",
-                "keywords": [],
-                "tokens": [],
-            },
+            "file_path": "images/IMAGE_test1.jpg",
         },
         {
             "chunk_id": "table_chunk_optimized",
             "type": "table",
             "content": TABLE_HTML,
             "path": "tables/table-optimized.html",
-            "metadata": {
-                "length": 1,
-                "summary": "Optimized table chunk",
-                "page_nums": [3],
-                "file_path": "tables/table-optimized.html",
-                "keywords": ["optimized"],
-                "tokens": [],
-            },
+            "file_path": "tables/table-optimized.html",
         },
     ]
 
@@ -235,20 +234,18 @@ class TestParseValidZip:
         assert text_chunks[0].chunk_id == "text_chunk_1"
         assert text_chunks[0].content == "Hello world"
 
-    def test_accepts_text_chunk_tokens_as_list(self) -> None:
+    def test_metadata_accessible_on_chunks(self) -> None:
         manifest: Dict[str, Any] = _make_manifest()
         chunks: List[Dict[str, Any]] = [
             {
-                "chunk_id": "text_chunk_tokens_list",
+                "chunk_id": "text_with_meta",
                 "type": "text",
-                "content": "Attention is all you need",
-                "path": "paper/abstract",
+                "content": "Text with metadata",
+                "path": "doc/section1",
                 "metadata": {
-                    "length": 25,
-                    "tokens": TEXT_TOKENS_LIST,
-                    "keywords": ["attention", "transformer"],
-                    "summary": "Transformer introduction",
-                    "relationships": [],
+                    "length": 42,
+                    "tokens": ["hello", "world"],
+                    "summary": "A summary",
                 },
             }
         ]
@@ -256,52 +253,10 @@ class TestParseValidZip:
 
         result: ParseResult = parseResultZip(zip_bytes, verify_checksum=False)
 
-        assert len(result.text_chunks) == 1
-        assert result.text_chunks[0].tokens == TEXT_TOKENS_LIST
-
-    def test_rejects_legacy_text_chunk_tokens_string(self) -> None:
-        manifest: Dict[str, Any] = _make_manifest()
-        chunks: List[Dict[str, Any]] = [
-            {
-                "chunk_id": "text_chunk_tokens_string",
-                "type": "text",
-                "content": "Attention is all you need",
-                "path": "paper/abstract",
-                "metadata": {
-                    "length": 25,
-                    "tokens": "Ashish;Vaswani;attention;transformer",
-                    "keywords": ["attention", "transformer"],
-                    "summary": "Transformer introduction",
-                    "relationships": [],
-                },
-            }
-        ]
-        zip_bytes: bytes = _build_zip(manifest, chunks=chunks)
-
-        with pytest.raises(KnowhereError, match="expected list\\[str\\]"):
-            parseResultZip(zip_bytes, verify_checksum=False)
-
-    def test_rejects_integer_text_chunk_tokens(self) -> None:
-        manifest: Dict[str, Any] = _make_manifest()
-        chunks: List[Dict[str, Any]] = [
-            {
-                "chunk_id": "text_chunk_tokens_int",
-                "type": "text",
-                "content": "Attention is all you need",
-                "path": "paper/abstract",
-                "metadata": {
-                    "length": 25,
-                    "tokens": 4,
-                    "keywords": ["attention", "transformer"],
-                    "summary": "Transformer introduction",
-                    "relationships": [],
-                },
-            }
-        ]
-        zip_bytes: bytes = _build_zip(manifest, chunks=chunks)
-
-        with pytest.raises(KnowhereError, match="expected list\\[str\\]"):
-            parseResultZip(zip_bytes, verify_checksum=False)
+        chunk = result.text_chunks[0]
+        assert chunk.metadata.length == 42
+        assert chunk.metadata.tokens == ["hello", "world"]
+        assert chunk.metadata.summary == "A summary"
 
     def test_loads_image_chunks_with_data(self) -> None:
         manifest: Dict[str, Any] = _make_manifest()
@@ -381,16 +336,9 @@ class TestParseValidZip:
         assert result.manifest.processing.billing_status == "charged"
         assert result.manifest.processing.cost is not None
         assert result.manifest.processing.cost.micro_dollars == 60000
-        assert result.text_chunks[0].page_nums == [1, 2]
-        assert result.image_chunks[0].page_nums == [2]
-        assert result.table_chunks[0].page_nums == [3]
-        assert result.text_chunks[0].connect_to == [
-            {
-                "target": "image_chunk_optimized",
-                "relation": "embeds",
-                "ref": "[images/IMAGE_test1.jpg]",
-            }
-        ]
+        assert result.text_chunks[0].chunk_id == "text_chunk_optimized"
+        assert result.image_chunks[0].chunk_id == "image_chunk_optimized"
+        assert result.table_chunks[0].chunk_id == "table_chunk_optimized"
         assert result.chunks_slim is not None
         assert len(result.chunks_slim) == 1
         assert result.kb_csv == "chunk_id,type\ntext_chunk_optimized,text\n"
@@ -447,6 +395,153 @@ class TestParseValidZip:
         assert (output_dir / "images" / "IMAGE_test1.jpg").exists()
         assert (output_dir / "tables" / "table-optimized.html").exists()
         assert (output_dir / "result.zip").exists()
+
+
+# ---------------------------------------------------------------------------
+# Current worker contract tests (doc_nav, HIERARCHY)
+# ---------------------------------------------------------------------------
+
+
+def _make_current_contract_manifest() -> Dict[str, Any]:
+    """Manifest matching the current worker contract with HIERARCHY."""
+    return {
+        "version": "2.0",
+        "job_id": "job_current123",
+        "data_id": None,
+        "source_file_name": "current.pdf",
+        "processing_date": "2026-05-01T00:00:00Z",
+        "HIERARCHY": {
+            "Default_Root": {
+                "current.pdf": {
+                    "sections": ["Introduction", "Methods", "Results"],
+                }
+            }
+        },
+        "statistics": {
+            "total_chunks": 2,
+            "text_chunks": 1,
+            "image_chunks": 1,
+            "table_chunks": 0,
+            "total_pages": None,
+        },
+    }
+
+
+class TestCurrentWorkerContract:
+    """Tests against the current worker output contract."""
+
+    # -- doc_nav.json --
+
+    def test_parses_doc_nav(self) -> None:
+        manifest = _make_optimized_manifest()
+        chunks = _make_optimized_chunks()
+        zip_bytes = _build_zip(
+            manifest,
+            chunks=chunks,
+            extra_entries={
+                "doc_nav.json": json.dumps(DOC_NAV_JSON).encode("utf-8"),
+                "tables/table-optimized.html": TABLE_HTML.encode("utf-8"),
+            },
+        )
+
+        result = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert result.doc_nav is not None
+        doc_nav: DocNav = result.doc_nav
+        assert len(doc_nav.sections) == 1
+        assert doc_nav.sections[0].title == "Introduction"
+        assert doc_nav.sections[0].level == 1
+        assert doc_nav.sections[0].chunk_count == 3
+        assert len(doc_nav.sections[0].children) == 1
+        assert doc_nav.sections[0].children[0].title == "Background"
+        assert doc_nav.resources is not None
+        assert len(doc_nav.resources.images) == 1
+        assert doc_nav.resources.images[0].path == "images/IMAGE_test1.jpg"
+        assert len(doc_nav.resources.tables) == 1
+        assert doc_nav.resources.tables[0].path == "tables/table-optimized.html"
+
+    def test_doc_nav_none_when_missing(self) -> None:
+        manifest = _make_optimized_manifest()
+        zip_bytes = _build_zip(manifest)
+
+        result = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert result.doc_nav is None
+
+    def test_save_writes_doc_nav(self, tmp_path: Path) -> None:
+        manifest = _make_optimized_manifest()
+        chunks = _make_optimized_chunks()
+        zip_bytes = _build_zip(
+            manifest,
+            chunks=chunks,
+            extra_entries={
+                "doc_nav.json": json.dumps(DOC_NAV_JSON).encode("utf-8"),
+                "tables/table-optimized.html": TABLE_HTML.encode("utf-8"),
+            },
+        )
+
+        result = parseResultZip(zip_bytes, verify_checksum=False)
+        output_dir = tmp_path / "with-doc-nav"
+        result.save(output_dir)
+
+        assert (output_dir / "doc_nav.json").exists()
+
+    # -- Manifest HIERARCHY --
+
+    def test_manifest_hierarchy_alias(self) -> None:
+        manifest = _make_current_contract_manifest()
+        zip_bytes = _build_zip(manifest)
+
+        result = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert result.manifest.hierarchy is not None
+        assert "Default_Root" in result.manifest.hierarchy
+
+    def test_manifest_without_hierarchy(self) -> None:
+        manifest = _make_optimized_manifest()
+        zip_bytes = _build_zip(manifest)
+
+        result = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert result.manifest.hierarchy is None
+
+    # -- Graceful handling of missing legacy files --
+
+    def test_parses_without_chunks_slim(self) -> None:
+        """Current worker doesn't emit chunks_slim.json — parse must succeed."""
+        manifest = _make_optimized_manifest()
+        chunks = _make_optimized_chunks()
+        zip_bytes = _build_zip(
+            manifest,
+            chunks=chunks,
+            extra_entries={
+                "tables/table-optimized.html": TABLE_HTML.encode("utf-8"),
+            },
+            # No chunks_slim.json in extra_entries
+        )
+
+        result = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert result.chunks_slim is None
+        assert len(result.chunks) == 3
+
+    def test_parses_without_hierarchy_json(self) -> None:
+        """Current worker doesn't emit hierarchy.json — parse must succeed."""
+        manifest = _make_optimized_manifest()
+        chunks = _make_optimized_chunks()
+        zip_bytes = _build_zip(
+            manifest,
+            chunks=chunks,
+            extra_entries={
+                "tables/table-optimized.html": TABLE_HTML.encode("utf-8"),
+            },
+            # No hierarchy.json in extra_entries
+        )
+
+        result = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert result.hierarchy is None
+        assert result.manifest is not None
 
 
 # ---------------------------------------------------------------------------
