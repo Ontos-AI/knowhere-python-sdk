@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.4.0...v0.5.0) (2026-05-15)
+
+
+### Features
+
+* sync SDK with current worker ZIP contract and agentic retrieval API ([ad8db2e](https://github.com/Ontos-AI/knowhere-python-sdk/commit/ad8db2e87c77978928d046c95565e9e60c1b1f4e))
+
 ## [0.4.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.3.2...v0.4.0) (2026-04-27)
 
 
