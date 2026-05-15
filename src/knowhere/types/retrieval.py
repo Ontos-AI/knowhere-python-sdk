@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, TypedDict
+from typing import Any, Dict, List, Literal, Optional, TypedDict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 RetrievalChannel = Literal["path", "content", "term"]
@@ -37,9 +37,16 @@ class RetrievalResult(BaseModel):
 
 
 class RetrievalQueryResponse(BaseModel):
-    """Response from ``POST /v1/retrieval/query``."""
+    """Response from ``POST /v1/retrieval/query``.
+
+    Agentic fields (``answer_text``, ``referenced_chunks``) are only
+    populated when ``use_agentic=True``.  In legacy retrieval mode they
+    default to ``None`` and ``[]`` respectively.
+    """
 
     namespace: str
     query: str
     router_used: Optional[str] = None
+    answer_text: Optional[str] = None
+    referenced_chunks: List[Dict[str, Any]] = Field(default_factory=list)
     results: list[RetrievalResult]

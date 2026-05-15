@@ -414,13 +414,17 @@ class TestBaseChunkModel:
         chunk: BaseChunk = BaseChunk(chunk_id="chunk_2", type="text")
         assert chunk.content == ""
         assert chunk.path is None
-        assert chunk.page_nums is None
+        assert chunk.metadata.length is None
+        assert chunk.metadata.tokens is None
 
-    def test_page_nums_supported(self) -> None:
+    def test_metadata_accessible(self) -> None:
         chunk: BaseChunk = BaseChunk(
-            chunk_id="chunk_3", type="text", page_nums=[1, 2]
+            chunk_id="chunk_3",
+            type="text",
+            metadata={"tokens": ["a", "b"], "length": 10},
         )
-        assert chunk.page_nums == [1, 2]
+        assert chunk.metadata.tokens == ["a", "b"]
+        assert chunk.metadata.length == 10
 
 
 # ---------------------------------------------------------------------------
@@ -436,47 +440,20 @@ class TestTextChunkModel:
             chunk_id="text_1",
             content="Some text content",
             path="doc/section1",
-            length=17,
-            page_nums=[1, 2],
-            tokens=["Some", "text", "content"],
-            keywords=["text", "content"],
-            summary="A text chunk",
-            connect_to=[{"target": "img_1", "relation": "embeds"}],
-            relationships=[{"target": "text_2", "type": "follows"}],
         )
         assert chunk.chunk_id == "text_1"
         assert chunk.type == "text"
         assert chunk.content == "Some text content"
-        assert chunk.length == 17
-        assert chunk.page_nums == [1, 2]
-        assert chunk.tokens == ["Some", "text", "content"]
-        assert chunk.keywords == ["text", "content"]
-        assert chunk.summary == "A text chunk"
-        assert chunk.connect_to is not None
-        assert len(chunk.connect_to) == 1
-        assert chunk.relationships is not None
-        assert len(chunk.relationships) == 1
 
     def test_defaults(self) -> None:
         chunk: TextChunk = TextChunk(chunk_id="text_2")
         assert chunk.type == "text"
-        assert chunk.length == 0
-        assert chunk.tokens is None
-        assert chunk.keywords is None
-        assert chunk.summary is None
-        assert chunk.connect_to is None
-        assert chunk.relationships is None
+        assert chunk.content == ""
+        assert chunk.path is None
 
     def test_is_instance_of_base_chunk(self) -> None:
         chunk: TextChunk = TextChunk(chunk_id="text_3")
         assert isinstance(chunk, BaseChunk)
-
-    def test_accepts_tokens_list(self) -> None:
-        chunk: TextChunk = TextChunk(
-            chunk_id="text_4",
-            tokens=["attention", "transformer"],
-        )
-        assert chunk.tokens == ["attention", "transformer"]
 
 
 # ---------------------------------------------------------------------------
@@ -492,24 +469,18 @@ class TestImageChunkModel:
             chunk_id="IMG_1",
             content="A photo of a cat",
             file_path="images/IMG_1.jpg",
-            original_name="cat.jpg",
-            summary="Cat photo",
             data=b"\xff\xd8\xff\xe0",
         )
         assert chunk.chunk_id == "IMG_1"
         assert chunk.type == "image"
         assert chunk.content == "A photo of a cat"
         assert chunk.file_path == "images/IMG_1.jpg"
-        assert chunk.original_name == "cat.jpg"
         assert chunk.data == b"\xff\xd8\xff\xe0"
 
     def test_defaults(self) -> None:
         chunk: ImageChunk = ImageChunk(chunk_id="IMG_2")
         assert chunk.type == "image"
-        assert chunk.length == 0
         assert chunk.file_path is None
-        assert chunk.original_name is None
-        assert chunk.summary is None
         assert chunk.data == b""
 
     def test_format_property_from_file_path(self) -> None:
@@ -547,22 +518,16 @@ class TestTableChunkModel:
             chunk_id="TBL_1",
             content="Revenue table",
             file_path="tables/TBL_1.html",
-            original_name="revenue.html",
-            table_type="financial",
-            summary="Revenue data",
             html="<table><tr><td>100</td></tr></table>",
         )
         assert chunk.chunk_id == "TBL_1"
         assert chunk.type == "table"
-        assert chunk.table_type == "financial"
         assert chunk.html == "<table><tr><td>100</td></tr></table>"
 
     def test_defaults(self) -> None:
         chunk: TableChunk = TableChunk(chunk_id="TBL_2")
         assert chunk.type == "table"
-        assert chunk.length == 0
         assert chunk.file_path is None
-        assert chunk.table_type is None
         assert chunk.html == ""
 
     def test_is_instance_of_base_chunk(self) -> None:
@@ -602,7 +567,6 @@ def _build_parse_result(
         TextChunk(
             chunk_id="text_1",
             content="Hello world",
-            length=11,
         ),
         ImageChunk(
             chunk_id="img_1",
@@ -624,7 +588,6 @@ def _build_parse_result(
                 type="text",
                 path="doc/section1",
                 content="Hello world",
-                summary="Greeting",
             )
         ],
         full_markdown="# Test\n\nHello world",

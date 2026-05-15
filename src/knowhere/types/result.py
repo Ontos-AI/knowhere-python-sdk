@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
-from typing_extensions import TypeAlias
 
 from knowhere._exceptions import ValidationError
 
@@ -138,11 +137,70 @@ class Manifest(BaseModel):
     checksum: Optional[Checksum] = None
     statistics: Optional[Statistics] = None
     files: Optional[FileIndex] = None
+    hierarchy: Optional[Any] = Field(default=None, alias="HIERARCHY")
+
+
+# ---------------------------------------------------------------------------
+# DocNav models
+# ---------------------------------------------------------------------------
+
+
+class DocNavResourceItem(BaseModel):
+    """A single image or table resource entry in ``doc_nav.json``."""
+
+    path: str
+    summary: Optional[str] = None
+
+
+class DocNavResources(BaseModel):
+    """Image and table resource summaries from ``doc_nav.json``."""
+
+    images: List[DocNavResourceItem] = Field(default_factory=list)
+    tables: List[DocNavResourceItem] = Field(default_factory=list)
+
+
+class DocNavSection(BaseModel):
+    """A document section entry in the ``doc_nav.json`` navigation tree."""
+
+    title: str
+    path: str
+    level: int
+    summary: Optional[str] = None
+    chunk_count: int = 0
+    children: List["DocNavSection"] = Field(default_factory=list)
+
+
+class DocNav(BaseModel):
+    """Top-level document navigation structure from ``doc_nav.json``."""
+
+    sections: List[DocNavSection] = Field(default_factory=list)
+    resources: Optional[DocNavResources] = None
 
 
 # ---------------------------------------------------------------------------
 # Chunk models
 # ---------------------------------------------------------------------------
+
+
+class ChunkMetadata(BaseModel):
+    """Known worker metadata fields for a chunk.
+
+    All fields are optional.  Unknown fields added by future worker
+    versions are preserved thanks to ``model_config``.
+    """
+
+    model_config = {"extra": "allow"}
+
+    length: Optional[int] = None
+    page_nums: Optional[List[int]] = None
+    tokens: Optional[List[str]] = None
+    keywords: Optional[List[str]] = None
+    summary: Optional[str] = None
+    connect_to: Optional[List[Dict[str, Any]]] = None
+    file_path: Optional[str] = None
+    original_name: Optional[str] = None
+    table_type: Optional[str] = None
+    document_top_summary: Optional[str] = None
 
 
 class BaseChunk(BaseModel):
@@ -152,32 +210,20 @@ class BaseChunk(BaseModel):
     type: str
     content: str = ""
     path: Optional[str] = None
-    page_nums: Optional[List[int]] = None
-
-
-TextChunkTokens: TypeAlias = List[str]
+    metadata: ChunkMetadata = Field(default_factory=ChunkMetadata)
 
 
 class TextChunk(BaseChunk):
     """A text chunk extracted from the document."""
 
     type: str = "text"
-    length: int = 0
-    tokens: Optional[TextChunkTokens] = None
-    keywords: Optional[List[str]] = None
-    summary: Optional[str] = None
-    connect_to: Optional[List[Dict[str, Any]]] = None
-    relationships: Optional[List[Union[Dict[str, Any], str]]] = None
 
 
 class ImageChunk(BaseChunk):
     """An image chunk — carries raw bytes loaded from the ZIP."""
 
     type: str = "image"
-    length: int = 0
     file_path: Optional[str] = None
-    original_name: Optional[str] = None
-    summary: Optional[str] = None
     data: bytes = Field(default=b"", exclude=True)
 
     model_config = {"arbitrary_types_allowed": True}
@@ -193,13 +239,13 @@ class ImageChunk(BaseChunk):
     def save(self, directory: Union[str, Path]) -> Path:
         """Write the image bytes to *directory*, returning the output path.
 
-        The filename is derived from ``original_name`` or ``file_path``,
-        sanitised for cross-platform safety.
+        The filename is derived from ``file_path``, sanitised for
+        cross-platform safety.
         """
         dir_path: Path = Path(directory)
         dir_path.mkdir(parents=True, exist_ok=True)
 
-        raw_name: str = self.original_name or os.path.basename(
+        raw_name: str = os.path.basename(
             self.file_path or f"{self.chunk_id}.bin"
         )
         safe_name: str = _sanitizeFilename(raw_name)
@@ -214,11 +260,7 @@ class TableChunk(BaseChunk):
     """A table chunk — carries HTML loaded from the ZIP."""
 
     type: str = "table"
-    length: int = 0
     file_path: Optional[str] = None
-    original_name: Optional[str] = None
-    table_type: Optional[str] = None
-    summary: Optional[str] = None
     html: str = Field(default="", exclude=True)
 
     def save(self, directory: Union[str, Path]) -> Path:
@@ -226,7 +268,7 @@ class TableChunk(BaseChunk):
         dir_path: Path = Path(directory)
         dir_path.mkdir(parents=True, exist_ok=True)
 
-        raw_name: str = self.original_name or os.path.basename(
+        raw_name: str = os.path.basename(
             self.file_path or f"{self.chunk_id}.html"
         )
         safe_name: str = _sanitizeFilename(raw_name)
@@ -242,12 +284,11 @@ Chunk = Union[TextChunk, ImageChunk, TableChunk]
 
 
 class SlimChunk(BaseModel):
-    """Minimal chunk entry emitted in chunks_slim.json."""
+    """Minimal chunk entry emitted in chunks_slim.json (legacy)."""
 
     type: str
     path: Optional[str] = None
     content: str = ""
-    summary: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -259,48 +300,59 @@ class ParseResult:
     """Eagerly-loaded result of a document parsing job.
 
     Contains the manifest, all chunks (with image bytes and table HTML
-    already loaded), the full markdown, hierarchy data, and the raw ZIP
-    bytes for archival purposes.
+    already loaded), the full markdown, the document navigation tree,
+    and the raw ZIP bytes for archival purposes.
+
+    Legacy fields (``chunks_slim``, ``hierarchy``, ``toc_hierarchies``,
+    ``kb_csv``, ``hierarchy_view_html``) are kept for backward
+    compatibility with older result ZIPs.  The current worker does not
+    emit ``chunks_slim.json`` or ``hierarchy.json``.
     """
 
     manifest: Manifest
     chunks: List[Chunk]
-    chunks_slim: Optional[List[SlimChunk]]
     full_markdown: str
+    raw_zip: bytes
+    namespace: Optional[str]
+    document_id: Optional[str]
+    # Current worker output
+    doc_nav: Optional[DocNav]
+    # Legacy — the current worker no longer emits these files
+    chunks_slim: Optional[List[SlimChunk]]
     hierarchy: Optional[Any]
     toc_hierarchies: Optional[Any]
     kb_csv: Optional[str]
     hierarchy_view_html: Optional[str]
-    raw_zip: bytes
-    namespace: Optional[str]
-    document_id: Optional[str]
 
     def __init__(
         self,
         *,
         manifest: Manifest,
         chunks: List[Chunk],
-        chunks_slim: Optional[List[SlimChunk]],
         full_markdown: str,
-        hierarchy: Optional[Any],
-        toc_hierarchies: Optional[Any],
-        kb_csv: Optional[str],
-        hierarchy_view_html: Optional[str],
         raw_zip: bytes,
+        doc_nav: Optional[DocNav] = None,
         namespace: Optional[str] = None,
         document_id: Optional[str] = None,
+        # Legacy — the current worker no longer emits these files
+        chunks_slim: Optional[List[SlimChunk]] = None,
+        hierarchy: Optional[Any] = None,
+        toc_hierarchies: Optional[Any] = None,
+        kb_csv: Optional[str] = None,
+        hierarchy_view_html: Optional[str] = None,
     ) -> None:
         self.manifest = manifest
         self.chunks = chunks
-        self.chunks_slim = chunks_slim
         self.full_markdown = full_markdown
+        self.raw_zip = raw_zip
+        self.doc_nav = doc_nav
+        self.namespace = namespace
+        self.document_id = document_id
+        self.chunks_slim = chunks_slim
         self.hierarchy = hierarchy
         self.toc_hierarchies = toc_hierarchies
         self.kb_csv = kb_csv
         self.hierarchy_view_html = hierarchy_view_html
-        self.raw_zip = raw_zip
-        self.namespace = namespace
-        self.document_id = document_id
 
     # -- convenience properties --
 
@@ -344,10 +396,16 @@ class ParseResult:
         """Save the full result to *directory*.
 
         Creates the directory if needed and writes:
+        * ``manifest.json`` — result manifest
+        * ``chunks.json`` — all chunks
+        * ``doc_nav.json`` — document navigation tree (if present)
         * ``full.md`` — the full markdown
         * ``images/`` — all image chunks
         * ``tables/`` — all table chunks
         * ``result.zip`` — the raw ZIP archive
+
+        Legacy files (``chunks_slim.json``, ``hierarchy.json``, etc.) are
+        also written when present for backward compatibility.
 
         Returns the resolved directory path.
         """
@@ -357,7 +415,7 @@ class ParseResult:
         # Manifest / chunks
         manifest_path: Path = dir_path / "manifest.json"
         manifest_path.write_text(
-            self.manifest.model_dump_json(indent=2),
+            self.manifest.model_dump_json(indent=2, by_alias=True),
             encoding="utf-8",
         )
 
@@ -366,6 +424,13 @@ class ParseResult:
             json.dumps([chunk.model_dump() for chunk in self.chunks], indent=2),
             encoding="utf-8",
         )
+
+        if self.doc_nav is not None:
+            doc_nav_path: Path = dir_path / "doc_nav.json"
+            doc_nav_path.write_text(
+                self.doc_nav.model_dump_json(indent=2),
+                encoding="utf-8",
+            )
 
         if self.chunks_slim is not None:
             chunks_slim_path: Path = dir_path / "chunks_slim.json"

@@ -20,6 +20,35 @@ def _make_retrieval_response() -> Dict[str, Any]:
         "namespace": "support-center",
         "query": "refund policy",
         "router_used": "discovery+agent",
+        "answer_text": "Annual plans may be refunded within 30 days of purchase.",
+        "referenced_chunks": [
+            {
+                "chunk_id": "chunk_001",
+                "document_id": "doc_123",
+                "asset_url": "https://example.com/assets/chunk_001",
+            }
+        ],
+        "results": [
+            {
+                "chunk_type": "text",
+                "content": "Annual plans may be refunded within 30 days.",
+                "score": 1.0,
+                "source": {
+                    "document_id": "doc_123",
+                    "source_file_name": "refund-policy.md",
+                    "section_path": "Policies / Billing / Refunds",
+                },
+            }
+        ],
+    }
+
+
+def _make_legacy_retrieval_response() -> Dict[str, Any]:
+    """Legacy-mode response without agentic fields (backward compatibility)."""
+    return {
+        "namespace": "support-center",
+        "query": "refund policy",
+        "router_used": "discovery+legacy",
         "results": [
             {
                 "chunk_type": "text",
@@ -93,6 +122,11 @@ class TestRetrievalQuery:
         assert response.results[0].source.document_id == "doc_123"
         assert response.results[0].source.source_file_name == "refund-policy.md"
         assert response.results[0].source.section_path == "Policies / Billing / Refunds"
+        assert response.answer_text == (
+            "Annual plans may be refunded within 30 days of purchase."
+        )
+        assert len(response.referenced_chunks) == 1
+        assert response.referenced_chunks[0]["chunk_id"] == "chunk_001"
         assert not hasattr(response.results[0], "citation")
         assert not hasattr(response.results[0], "chunk_id")
         assert not hasattr(response.results[0], "section_id")
@@ -127,3 +161,62 @@ class TestRetrievalQuery:
         assert route.called
         assert response.router_used == "discovery+agent"
         assert response.results[0].source.document_id == "doc_123"
+
+    @respx.mock
+    def test_use_agentic_sends_parameter(self, sync_client: Any) -> None:
+        """use_agentic=True is sent to the server."""
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+            return_value=httpx.Response(200, json=_make_retrieval_response())
+        )
+
+        sync_client.retrieval.query(query="refund policy", use_agentic=True)
+
+        request_body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert request_body["use_agentic"] is True
+
+    @respx.mock
+    def test_use_agentic_omitted_when_none(self, sync_client: Any) -> None:
+        """use_agentic=None omits the parameter (server default)."""
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+            return_value=httpx.Response(200, json=_make_retrieval_response())
+        )
+
+        sync_client.retrieval.query(query="refund policy")
+
+        request_body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert "use_agentic" not in request_body
+
+    @respx.mock
+    def test_agentic_response_fields(self, sync_client: Any) -> None:
+        """Agentic response exposes answer_text and referenced_chunks."""
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+            return_value=httpx.Response(200, json=_make_retrieval_response())
+        )
+
+        response = sync_client.retrieval.query(
+            query="refund policy",
+            use_agentic=True,
+        )
+
+        assert response.answer_text == (
+            "Annual plans may be refunded within 30 days of purchase."
+        )
+        assert len(response.referenced_chunks) == 1
+        assert response.referenced_chunks[0]["chunk_id"] == "chunk_001"
+        assert response.referenced_chunks[0]["asset_url"] == (
+            "https://example.com/assets/chunk_001"
+        )
+
+    @respx.mock
+    def test_legacy_response_without_agentic_fields(self, sync_client: Any) -> None:
+        """Legacy-mode response (no agentic fields) parses without error."""
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+            return_value=httpx.Response(
+                200, json=_make_legacy_retrieval_response()
+            )
+        )
+
+        response = sync_client.retrieval.query(query="refund policy")
+
+        assert response.answer_text is None
+        assert response.referenced_chunks == []

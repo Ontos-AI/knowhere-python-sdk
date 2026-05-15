@@ -1,5 +1,9 @@
 # Knowhere Python SDK — Usage Guide
 
+> **Recent changes:** Chunk metadata fields (`tokens`, `keywords`, `summary`,
+> `length`, etc.) are no longer flattened to the chunk surface. Access them
+> through `chunk.metadata` instead. See [Chunk Types](#chunk-types).
+
 Comprehensive reference for every feature, parameter, and pattern in the SDK.
 
 ## Table of Contents
@@ -219,8 +223,13 @@ result.table_chunks               # List[TableChunk]
 # Lookup by ID
 chunk = result.getChunk("chunk_42")
 
-# Hierarchy data (document structure tree, if available)
-result.hierarchy
+# Document navigation tree (from doc_nav.json, current worker output)
+result.doc_nav                # DocNav | None
+result.doc_nav.sections       # List[DocNavSection] — tree of titles/paths/levels
+result.doc_nav.resources      # DocNavResources — image/table resource summaries
+
+# Legacy hierarchy (from hierarchy.json, older worker output)
+result.hierarchy              # Any | None
 
 # Raw ZIP bytes (for archival)
 result.raw_zip
@@ -239,49 +248,48 @@ result.save("./output/report/")
 
 ## Chunk Types
 
-Every chunk shares a base set of fields (`chunk_id`, `type`, `content`, `path`). Each type adds its own fields.
+Every chunk shares a base set of fields (`chunk_id`, `type`, `content`, `path`,
+`metadata`). Worker metadata is kept in the `metadata` dict — it is **not**
+flattened to top-level chunk properties.
 
-### TextChunk
+### Base fields (all chunk types)
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `chunk_id` | `str` | Unique identifier |
-| `type` | `str` | Always `"text"` |
-| `content` | `str` | The text content |
-| `path` | `str \| None` | Document structure path (e.g. `"Section 1 > Subsection 2"`) |
-| `length` | `int` | Character count |
-| `tokens` | `List[str] \| None` | Tokenized words returned by the parser pipeline |
-| `keywords` | `List[str] \| None` | Extracted keywords (requires `summary_txt: True`) |
-| `summary` | `str \| None` | AI-generated summary (requires `summary_txt: True`) |
-| `relationships` | `List \| None` | Relationships to other chunks |
+| `type` | `str` | `"text"`, `"image"`, or `"table"` |
+| `content` | `str` | Text content or placeholder |
+| `path` | `str \| None` | Document structure path |
+| `metadata` | `dict` | Raw worker metadata (tokens, keywords, summary, length, page_nums, etc.) |
+
+### TextChunk
 
 ```python
 for chunk in result.text_chunks:
     print(f"[{chunk.chunk_id}] {chunk.content[:60]}...")
-    if chunk.keywords:
-        print(f"  Keywords: {', '.join(chunk.keywords)}")
-    if chunk.summary:
-        print(f"  Summary: {chunk.summary}")
+    # Metadata is in chunk.metadata, not flattened:
+    keywords = chunk.metadata.get("keywords", [])
+    summary = chunk.metadata.get("summary")
+    if keywords:
+        print(f"  Keywords: {', '.join(keywords)}")
+    if summary:
+        print(f"  Summary: {summary}")
 ```
 
 ### ImageChunk
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `chunk_id` | `str` | Unique identifier |
-| `type` | `str` | Always `"image"` |
-| `content` | `str` | Text content associated with the image |
 | `file_path` | `str \| None` | Path within the ZIP |
-| `original_name` | `str \| None` | Original filename |
-| `summary` | `str \| None` | AI-generated image description (requires `summary_image: True`) |
 | `data` | `bytes` | Raw image bytes (loaded from ZIP) |
 | `format` | `str \| None` | Image format inferred from extension (property) |
 
 ```python
 for img in result.image_chunks:
     print(f"{img.file_path} ({len(img.data)} bytes, {img.format})")
-    if img.summary:
-        print(f"  Description: {img.summary}")
+    summary = img.metadata.get("summary")
+    if summary:
+        print(f"  Description: {summary}")
     img.save("./output/images/")  # writes to disk
 ```
 
@@ -289,13 +297,7 @@ for img in result.image_chunks:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `chunk_id` | `str` | Unique identifier |
-| `type` | `str` | Always `"table"` |
-| `content` | `str` | Text representation of the table |
 | `file_path` | `str \| None` | Path within the ZIP |
-| `original_name` | `str \| None` | Original filename |
-| `table_type` | `str \| None` | Table classification |
-| `summary` | `str \| None` | AI-generated table summary (requires `summary_table: True`) |
 | `html` | `str` | Full HTML of the table (loaded from ZIP) |
 
 ```python
@@ -471,6 +473,19 @@ response = client.retrieval.query(
     top_k=5,
 )
 
+# Agentic mode (LLM navigation + answer synthesis)
+response = client.retrieval.query(
+    namespace="support-center",
+    query="How do I pair a Bluetooth headset?",
+    use_agentic=True,
+    top_k=5,
+)
+print(response.answer_text)          # LLM-generated natural-language answer
+print(response.router_used)          # "workflow_single_step", "small_kb_all", etc.
+for ref in response.referenced_chunks:
+    print(ref.get("chunk_id"), ref.get("asset_url"))
+
+# Legacy results are always available
 for result in response.results:
     print(result.content)
     print(result.score)
@@ -478,6 +493,10 @@ for result in response.results:
     print(result.source.source_file_name)
     print(result.source.section_path)
 ```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `use_agentic` | `bool \| None` | `None` | Force agentic (`True`) or legacy (`False`) retrieval. `None` uses server default. |
 
 Retrieval results expose `content`, not the older parse-result `text` field.
 Media results may include `asset_url` when the server can sign the referenced
