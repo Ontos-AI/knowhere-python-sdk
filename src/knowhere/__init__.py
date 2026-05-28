@@ -49,6 +49,7 @@ from knowhere.types.params import ParsingParams, WebhookConfig
 from knowhere.types.retrieval import (
     RetrievalChannel,
     RetrievalFilterMode,
+    RetrievalReferencedChunk,
     RetrievalSectionExclusion,
     RetrievalSource,
     RetrievalQueryResponse,
@@ -115,6 +116,7 @@ __all__: list[str] = [
     # Retrieval types
     "RetrievalChannel",
     "RetrievalFilterMode",
+    "RetrievalReferencedChunk",
     "RetrievalSectionExclusion",
     "RetrievalSource",
     "RetrievalQueryResponse",
