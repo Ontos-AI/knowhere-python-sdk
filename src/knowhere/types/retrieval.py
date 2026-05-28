@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, TypedDict
+from typing import Literal, Optional, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -36,17 +36,31 @@ class RetrievalResult(BaseModel):
     source: RetrievalSource
 
 
+class RetrievalReferencedChunk(BaseModel):
+    """Cited evidence chunk returned by agentic retrieval."""
+
+    chunk_id: str
+    document_id: str
+    chunk_type: str
+    section_path: str
+    file_path: Optional[str] = None
+    job_id: Optional[str] = None
+    asset_url: Optional[str] = None
+
+
 class RetrievalQueryResponse(BaseModel):
     """Response from ``POST /v1/retrieval/query``.
 
-    Agentic fields (``answer_text``, ``referenced_chunks``) are only
-    populated when ``use_agentic=True``.  In legacy retrieval mode they
-    default to ``None`` and ``[]`` respectively.
+    Agentic retrieval may also include ``evidence_text``, ``stop_reason``,
+    and ``failure_reason`` when the server returns workflow diagnostics.
     """
 
     namespace: str
     query: str
-    router_used: Optional[str] = None
+    router_used: str
     answer_text: Optional[str] = None
-    referenced_chunks: List[Dict[str, Any]] = Field(default_factory=list)
+    referenced_chunks: list[RetrievalReferencedChunk] = Field(default_factory=list)
+    evidence_text: Optional[str] = None
+    stop_reason: Optional[str] = None
+    failure_reason: Optional[str] = None
     results: list[RetrievalResult]

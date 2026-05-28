@@ -21,10 +21,17 @@ def _make_retrieval_response() -> Dict[str, Any]:
         "query": "refund policy",
         "router_used": "discovery+agent",
         "answer_text": "Annual plans may be refunded within 30 days of purchase.",
+        "evidence_text": "Rendered retrieval evidence",
+        "stop_reason": "answer_done",
+        "failure_reason": "insufficient evidence",
         "referenced_chunks": [
             {
                 "chunk_id": "chunk_001",
                 "document_id": "doc_123",
+                "chunk_type": "text",
+                "section_path": "Policies / Billing / Refunds",
+                "file_path": None,
+                "job_id": "job_123",
                 "asset_url": "https://example.com/assets/chunk_001",
             }
         ],
@@ -44,11 +51,13 @@ def _make_retrieval_response() -> Dict[str, Any]:
 
 
 def _make_legacy_retrieval_response() -> Dict[str, Any]:
-    """Legacy-mode response without agentic fields (backward compatibility)."""
+    """Legacy-mode response with server-default agentic fields."""
     return {
         "namespace": "support-center",
         "query": "refund policy",
         "router_used": "discovery+legacy",
+        "answer_text": None,
+        "referenced_chunks": [],
         "results": [
             {
                 "chunk_type": "text",
@@ -126,7 +135,12 @@ class TestRetrievalQuery:
             "Annual plans may be refunded within 30 days of purchase."
         )
         assert len(response.referenced_chunks) == 1
-        assert response.referenced_chunks[0]["chunk_id"] == "chunk_001"
+        assert response.evidence_text == "Rendered retrieval evidence"
+        assert response.stop_reason == "answer_done"
+        assert response.failure_reason == "insufficient evidence"
+        assert response.referenced_chunks[0].chunk_id == "chunk_001"
+        assert response.referenced_chunks[0].chunk_type == "text"
+        assert response.referenced_chunks[0].file_path is None
         assert not hasattr(response.results[0], "citation")
         assert not hasattr(response.results[0], "chunk_id")
         assert not hasattr(response.results[0], "section_id")
@@ -188,8 +202,8 @@ class TestRetrievalQuery:
 
     @respx.mock
     def test_agentic_response_fields(self, sync_client: Any) -> None:
-        """Agentic response exposes answer_text and referenced_chunks."""
-        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+        """Agentic response exposes answer, evidence, and typed references."""
+        respx.post(RETRIEVAL_QUERY_URL).mock(
             return_value=httpx.Response(200, json=_make_retrieval_response())
         )
 
@@ -202,15 +216,23 @@ class TestRetrievalQuery:
             "Annual plans may be refunded within 30 days of purchase."
         )
         assert len(response.referenced_chunks) == 1
-        assert response.referenced_chunks[0]["chunk_id"] == "chunk_001"
-        assert response.referenced_chunks[0]["asset_url"] == (
+        assert response.referenced_chunks[0].chunk_id == "chunk_001"
+        assert response.referenced_chunks[0].document_id == "doc_123"
+        assert response.referenced_chunks[0].chunk_type == "text"
+        assert response.referenced_chunks[0].section_path == "Policies / Billing / Refunds"
+        assert response.referenced_chunks[0].file_path is None
+        assert response.referenced_chunks[0].job_id == "job_123"
+        assert response.referenced_chunks[0].asset_url == (
             "https://example.com/assets/chunk_001"
         )
+        assert response.evidence_text == "Rendered retrieval evidence"
+        assert response.stop_reason == "answer_done"
+        assert response.failure_reason == "insufficient evidence"
 
     @respx.mock
     def test_legacy_response_without_agentic_fields(self, sync_client: Any) -> None:
-        """Legacy-mode response (no agentic fields) parses without error."""
-        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+        """Legacy-mode response defaults agentic fields to null and empty references."""
+        respx.post(RETRIEVAL_QUERY_URL).mock(
             return_value=httpx.Response(
                 200, json=_make_legacy_retrieval_response()
             )

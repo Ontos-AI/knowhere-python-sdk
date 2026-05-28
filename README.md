@@ -66,6 +66,13 @@ response = client.retrieval.query(
 )
 
 print(response.router_used)
+print(response.answer_text)
+print(response.evidence_text)
+print(response.stop_reason)
+print(response.failure_reason)
+
+for reference in response.referenced_chunks:
+    print(reference.chunk_id, reference.document_id, reference.asset_url)
 
 for result in response.results:
     print(result.content)
