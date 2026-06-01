@@ -24,6 +24,10 @@ def _make_retrieval_response() -> Dict[str, Any]:
         "evidence_text": "Rendered retrieval evidence",
         "stop_reason": "answer_done",
         "failure_reason": "insufficient evidence",
+        "decision_trace": [
+            {"phase": "discovery", "action": "select_documents", "selected": ["doc_123"]},
+            {"phase": "terminal", "action": "complete", "stop_reason": "answer_done", "failure_reason": "insufficient evidence"},
+        ],
         "referenced_chunks": [
             {
                 "chunk_id": "chunk_001",
@@ -228,6 +232,10 @@ class TestRetrievalQuery:
         assert response.evidence_text == "Rendered retrieval evidence"
         assert response.stop_reason == "answer_done"
         assert response.failure_reason == "insufficient evidence"
+        assert response.decision_trace is not None
+        assert len(response.decision_trace) == 2
+        assert response.decision_trace[0]["phase"] == "discovery"
+        assert response.decision_trace[-1]["phase"] == "terminal"
 
     @respx.mock
     def test_legacy_response_without_agentic_fields(self, sync_client: Any) -> None:
@@ -242,3 +250,4 @@ class TestRetrievalQuery:
 
         assert response.answer_text is None
         assert response.referenced_chunks == []
+        assert response.decision_trace is None
