@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, TypedDict
+from typing import Any, Literal, Optional, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -31,7 +31,7 @@ class RetrievalResult(BaseModel):
 
     chunk_type: str
     content: str
-    score: float
+    score: Optional[float] = None
     asset_url: Optional[str] = None
     source: RetrievalSource
 
@@ -51,8 +51,11 @@ class RetrievalReferencedChunk(BaseModel):
 class RetrievalQueryResponse(BaseModel):
     """Response from ``POST /v1/retrieval/query``.
 
-    Agentic retrieval may also include ``evidence_text``, ``stop_reason``,
-    and ``failure_reason`` when the server returns workflow diagnostics.
+    Three PRIMARY output fields for downstream agent consumption:
+
+    - ``evidence_text``: hierarchical evidence tree for LLM context
+    - ``decision_trace``: per-step navigation decisions (includes stop/failure)
+    - ``referenced_chunks``: structured chunk citations for follow-up queries
     """
 
     namespace: str
@@ -64,3 +67,4 @@ class RetrievalQueryResponse(BaseModel):
     stop_reason: Optional[str] = None
     failure_reason: Optional[str] = None
     results: list[RetrievalResult]
+    decision_trace: Optional[list[dict[str, Any]]] = None
