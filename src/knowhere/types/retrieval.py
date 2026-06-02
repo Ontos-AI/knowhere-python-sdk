@@ -31,7 +31,7 @@ class RetrievalResult(BaseModel):
 
     chunk_type: str
     content: str
-    score: float
+    score: Optional[float] = None
     asset_url: Optional[str] = None
     source: RetrievalSource
 
