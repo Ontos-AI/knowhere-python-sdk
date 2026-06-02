@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.5.0...v0.5.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* sync retrieval response sdk contract ([7827ea6](https://github.com/Ontos-AI/knowhere-python-sdk/commit/7827ea6df761d875dec188bf781be1e41953e7aa))
+* sync retrieval response SDK contract ([d439490](https://github.com/Ontos-AI/knowhere-python-sdk/commit/d439490fbf889d68a62011ec7fb82f47219edd14))
+* **types:** make RetrievalResult.score Optional[float] to match API null return ([#27](https://github.com/Ontos-AI/knowhere-python-sdk/issues/27)) ([06cf60f](https://github.com/Ontos-AI/knowhere-python-sdk/commit/06cf60f82e65e644161e653e7fc73a107e3f04f8))
+
 ## [0.5.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.4.0...v0.5.0) (2026-05-15)
 
 
