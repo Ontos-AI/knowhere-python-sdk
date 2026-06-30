@@ -103,9 +103,9 @@ if chunks.chunks:
     chunk = client.documents.get_chunk(
         document_id,
         chunks.chunks[0].id,
-        include_asset_urls=True,
     )
     print(chunk.chunk.content)
+    print(chunk.chunk.asset_url)  # 7-day URL for image/table chunks when available.
 
 client.documents.archive(document_id)
 ```

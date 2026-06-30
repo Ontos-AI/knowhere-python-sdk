@@ -558,10 +558,12 @@ chunks = client.documents.list_chunks(
 for chunk in chunks.chunks:
     print(chunk.id, chunk.content)
 
+# Image and table chunks include 7-day asset_url values when available.
+# Pass include_asset_urls=False to opt out for bulk scans.
+
 image_chunk = client.documents.get_chunk(
     "doc_123",
     "dchk_123",
-    include_asset_urls=True,
 )
 print(image_chunk.chunk.asset_url)
 

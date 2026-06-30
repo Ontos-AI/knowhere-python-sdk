@@ -184,8 +184,34 @@ class TestDocumentsResource:
         assert response.pagination.total == 0
 
     @respx.mock
+    def test_list_chunks_can_opt_out_of_asset_urls(self, sync_client: Any) -> None:
+        route = respx.get(f"{DOCUMENTS_URL}/doc_123/chunks").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "document_id": "doc_123",
+                    "namespace": "support-center",
+                    "job_result_id": "result_123",
+                    "job_id": "job_123",
+                    "chunks": [],
+                    "pagination": {
+                        "page": 1,
+                        "page_size": 50,
+                        "total": 0,
+                        "total_pages": 0,
+                    },
+                },
+            )
+        )
+
+        sync_client.documents.list_chunks("doc_123", include_asset_urls=False)
+
+        assert route.called
+        assert route.calls[0].request.url.params["include_asset_urls"] == "false"
+
+    @respx.mock
     @pytest.mark.asyncio
-    async def test_async_get_chunk_requests_asset_urls_only_when_needed(
+    async def test_async_get_chunk_accepts_explicit_asset_url_control(
         self,
         async_client: Any,
     ) -> None:

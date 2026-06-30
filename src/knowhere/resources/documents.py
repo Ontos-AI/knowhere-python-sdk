@@ -53,7 +53,7 @@ class Documents(SyncAPIResource):
         page: int = 1,
         page_size: int = 50,
         chunk_type: Optional[DocumentChunkType] = None,
-        include_asset_urls: bool = False,
+        include_asset_urls: Optional[bool] = None,
     ) -> DocumentChunkListResponse:
         """List current-revision chunks for one canonical document."""
         params: Dict[str, Any] = _build_chunk_list_params(
@@ -75,7 +75,7 @@ class Documents(SyncAPIResource):
         document_id: str,
         document_chunk_id: str,
         *,
-        include_asset_urls: bool = False,
+        include_asset_urls: Optional[bool] = None,
     ) -> DocumentChunkResponse:
         """Get one current-revision chunk for one canonical document."""
         params: Dict[str, Any] = _build_chunk_get_params(
@@ -137,7 +137,7 @@ class AsyncDocuments(AsyncAPIResource):
         page: int = 1,
         page_size: int = 50,
         chunk_type: Optional[DocumentChunkType] = None,
-        include_asset_urls: bool = False,
+        include_asset_urls: Optional[bool] = None,
     ) -> DocumentChunkListResponse:
         """List current-revision chunks for one canonical document."""
         params: Dict[str, Any] = _build_chunk_list_params(
@@ -159,7 +159,7 @@ class AsyncDocuments(AsyncAPIResource):
         document_id: str,
         document_chunk_id: str,
         *,
-        include_asset_urls: bool = False,
+        include_asset_urls: Optional[bool] = None,
     ) -> DocumentChunkResponse:
         """Get one current-revision chunk for one canonical document."""
         params: Dict[str, Any] = _build_chunk_get_params(
@@ -203,7 +203,7 @@ def _build_chunk_list_params(
     page: int,
     page_size: int,
     chunk_type: Optional[DocumentChunkType],
-    include_asset_urls: bool,
+    include_asset_urls: Optional[bool],
 ) -> Dict[str, Any]:
     params: Dict[str, Any] = {}
     if page != 1:
@@ -212,12 +212,12 @@ def _build_chunk_list_params(
         params["page_size"] = page_size
     if chunk_type is not None:
         params["chunk_type"] = chunk_type
-    if include_asset_urls:
-        params["include_asset_urls"] = True
+    if include_asset_urls is not None:
+        params["include_asset_urls"] = include_asset_urls
     return params
 
 
-def _build_chunk_get_params(*, include_asset_urls: bool) -> Dict[str, Any]:
-    if not include_asset_urls:
+def _build_chunk_get_params(*, include_asset_urls: Optional[bool]) -> Dict[str, Any]:
+    if include_asset_urls is None:
         return {}
-    return {"include_asset_urls": True}
+    return {"include_asset_urls": include_asset_urls}

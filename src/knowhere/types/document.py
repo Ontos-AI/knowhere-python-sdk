@@ -63,7 +63,7 @@ class DocumentChunk(BaseModel):
     file_path: Optional[str] = None
     sort_order: int
     metadata: Dict[str, Any]
-    asset_url: Optional[str] = None
+    asset_url: Optional[str] = None  # 7-day media asset URL when available.
     created_at: Optional[datetime] = None
 
 
