@@ -204,7 +204,9 @@ class TestDocumentsResource:
         assert response.pagination.total == 0
 
     @respx.mock
-    def test_list_chunks_can_opt_out_of_asset_urls(self, sync_client: Any) -> None:
+    def test_list_chunks_accepts_explicit_asset_url_control(
+        self, sync_client: Any
+    ) -> None:
         route = respx.get(f"{DOCUMENTS_URL}/doc_123/chunks").mock(
             return_value=httpx.Response(
                 200,

@@ -96,16 +96,18 @@ chunks = client.documents.list_chunks(
     document_id,
     page=1,
     page_size=50,
-    chunk_type="text",
+    chunk_type="image",
+    include_asset_urls=True,
 )
 print(chunks.pagination.total)
 if chunks.chunks:
     chunk = client.documents.get_chunk(
         document_id,
         chunks.chunks[0].id,
+        include_asset_urls=True,
     )
     print(chunk.chunk.content)
-    print(chunk.chunk.asset_url)  # 7-day URL for image/table chunks when available.
+    print(chunk.chunk.asset_url)  # Requested 7-day URL for image/table chunks.
 
 client.documents.archive(document_id)
 ```
