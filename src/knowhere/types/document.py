@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class Document(BaseModel):
@@ -36,6 +36,23 @@ class DocumentListResponse(BaseModel):
     namespace: str
     documents: list[Document]
     pagination: DocumentListPagination
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_legacy_pagination(cls, value: Any) -> Any:
+        if not isinstance(value, dict) or "pagination" in value:
+            return value
+
+        payload: Dict[str, Any] = dict(value)
+        documents = payload.get("documents")
+        document_count = len(documents) if isinstance(documents, list) else 0
+        payload["pagination"] = {
+            "page": 1,
+            "page_size": document_count,
+            "total": document_count,
+            "total_pages": 1 if document_count else 0,
+        }
+        return payload
 
 
 DocumentChunkType = Literal["text", "image", "table"]

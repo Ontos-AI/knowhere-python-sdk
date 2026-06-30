@@ -106,6 +106,26 @@ class TestDocumentsResource:
         assert response.pagination.total == 0
 
     @respx.mock
+    def test_list_documents_accepts_legacy_unpaginated_response(self, sync_client: Any) -> None:
+        route = respx.get(DOCUMENTS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "namespace": "default",
+                    "documents": [_make_document()],
+                },
+            )
+        )
+
+        response = sync_client.documents.list()
+
+        assert route.called
+        assert response.pagination.page == 1
+        assert response.pagination.page_size == 1
+        assert response.pagination.total == 1
+        assert response.pagination.total_pages == 1
+
+    @respx.mock
     def test_get_document_returns_document_state(self, sync_client: Any) -> None:
         route = respx.get(f"{DOCUMENTS_URL}/doc_123").mock(
             return_value=httpx.Response(200, json=_make_document())
