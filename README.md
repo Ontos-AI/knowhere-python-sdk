@@ -113,9 +113,14 @@ client.documents.archive(document_id)
 You can also list documents in a namespace:
 
 ```python
-documents = client.documents.list(namespace="support-center")
+documents = client.documents.list(
+    namespace="support-center",
+    page=1,
+    page_size=50,
+)
 for document in documents.documents:
     print(document.document_id, document.status)
+print(documents.pagination.total_pages)
 ```
 
 Retrieval supports exclusions when clients want follow-up results that avoid

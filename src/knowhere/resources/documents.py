@@ -17,11 +17,19 @@ from knowhere.types.document import (
 class Documents(SyncAPIResource):
     """Synchronous interface for ``/v1/documents`` endpoints."""
 
-    def list(self, *, namespace: Optional[str] = None) -> DocumentListResponse:
+    def list(
+        self,
+        *,
+        namespace: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> DocumentListResponse:
         """List canonical documents in a namespace."""
-        params: Dict[str, Any] = {}
-        if namespace is not None:
-            params["namespace"] = namespace
+        params: Dict[str, Any] = _build_document_list_params(
+            namespace=namespace,
+            page=page,
+            page_size=page_size,
+        )
 
         return self._request(
             "GET",
@@ -93,11 +101,19 @@ class Documents(SyncAPIResource):
 class AsyncDocuments(AsyncAPIResource):
     """Asynchronous interface for ``/v1/documents`` endpoints."""
 
-    async def list(self, *, namespace: Optional[str] = None) -> DocumentListResponse:
+    async def list(
+        self,
+        *,
+        namespace: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> DocumentListResponse:
         """List canonical documents in a namespace."""
-        params: Dict[str, Any] = {}
-        if namespace is not None:
-            params["namespace"] = namespace
+        params: Dict[str, Any] = _build_document_list_params(
+            namespace=namespace,
+            page=page,
+            page_size=page_size,
+        )
 
         return await self._request(
             "GET",
@@ -164,6 +180,22 @@ class AsyncDocuments(AsyncAPIResource):
             f"v1/documents/{document_id}/archive",
             cast_to=Document,
         )
+
+
+def _build_document_list_params(
+    *,
+    namespace: Optional[str],
+    page: int,
+    page_size: int,
+) -> Dict[str, Any]:
+    params: Dict[str, Any] = {}
+    if namespace is not None:
+        params["namespace"] = namespace
+    if page != 1:
+        params["page"] = page
+    if page_size != 50:
+        params["page_size"] = page_size
+    return params
 
 
 def _build_chunk_list_params(

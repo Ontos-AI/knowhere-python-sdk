@@ -55,23 +55,45 @@ class TestDocumentsResource:
                 json={
                     "namespace": "support-center",
                     "documents": [_make_document()],
+                    "pagination": {
+                        "page": 2,
+                        "page_size": 25,
+                        "total": 26,
+                        "total_pages": 2,
+                    },
                 },
             )
         )
 
-        response = sync_client.documents.list(namespace="support-center")
+        response = sync_client.documents.list(
+            namespace="support-center",
+            page=2,
+            page_size=25,
+        )
 
         assert route.called
         assert route.calls[0].request.url.params["namespace"] == "support-center"
+        assert route.calls[0].request.url.params["page"] == "2"
+        assert route.calls[0].request.url.params["page_size"] == "25"
         assert response.namespace == "support-center"
         assert response.documents[0].document_id == "doc_123"
+        assert response.pagination.total_pages == 2
 
     @respx.mock
     def test_list_documents_omits_namespace_when_defaulted(self, sync_client: Any) -> None:
         route = respx.get(DOCUMENTS_URL).mock(
             return_value=httpx.Response(
                 200,
-                json={"namespace": "default", "documents": []},
+                json={
+                    "namespace": "default",
+                    "documents": [],
+                    "pagination": {
+                        "page": 1,
+                        "page_size": 50,
+                        "total": 0,
+                        "total_pages": 0,
+                    },
+                },
             )
         )
 
@@ -81,6 +103,7 @@ class TestDocumentsResource:
         assert dict(route.calls[0].request.url.params) == {}
         assert response.namespace == "default"
         assert response.documents == []
+        assert response.pagination.total == 0
 
     @respx.mock
     def test_get_document_returns_document_state(self, sync_client: Any) -> None:

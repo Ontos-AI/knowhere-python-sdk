@@ -42,6 +42,7 @@ from knowhere.types.document import (
     DocumentChunkPagination,
     DocumentChunkResponse,
     DocumentChunkType,
+    DocumentListPagination,
     DocumentListResponse,
 )
 from knowhere.types.job import Job, JobError, JobProgress, JobResult
@@ -112,6 +113,7 @@ __all__: list[str] = [
     "DocumentChunkPagination",
     "DocumentChunkResponse",
     "DocumentChunkType",
+    "DocumentListPagination",
     "DocumentListResponse",
     # Retrieval types
     "RetrievalChannel",

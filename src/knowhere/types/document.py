@@ -21,11 +21,21 @@ class Document(BaseModel):
     archived_at: Optional[datetime] = None
 
 
+class DocumentListPagination(BaseModel):
+    """Pagination metadata returned by document list endpoints."""
+
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
 class DocumentListResponse(BaseModel):
     """Response from ``GET /v1/documents``."""
 
     namespace: str
     documents: list[Document]
+    pagination: DocumentListPagination
 
 
 DocumentChunkType = Literal["text", "image", "table"]
