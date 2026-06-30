@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.5.1...v0.6.0) (2026-06-30)
+
+
+### Features
+
+* support document list pagination ([f84c29a](https://github.com/Ontos-AI/knowhere-python-sdk/commit/f84c29ae15a024f110108a4241bc3de75717b998))
+* support document list pagination ([f26574e](https://github.com/Ontos-AI/knowhere-python-sdk/commit/f26574e3aeb508fec57231ff301588ec02b19aae))
+
 ## [0.5.1](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.5.0...v0.5.1) (2026-06-02)
 
 
