@@ -17,11 +17,19 @@ from knowhere.types.document import (
 class Documents(SyncAPIResource):
     """Synchronous interface for ``/v1/documents`` endpoints."""
 
-    def list(self, *, namespace: Optional[str] = None) -> DocumentListResponse:
+    def list(
+        self,
+        *,
+        namespace: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> DocumentListResponse:
         """List canonical documents in a namespace."""
-        params: Dict[str, Any] = {}
-        if namespace is not None:
-            params["namespace"] = namespace
+        params: Dict[str, Any] = _build_document_list_params(
+            namespace=namespace,
+            page=page,
+            page_size=page_size,
+        )
 
         return self._request(
             "GET",
@@ -45,7 +53,7 @@ class Documents(SyncAPIResource):
         page: int = 1,
         page_size: int = 50,
         chunk_type: Optional[DocumentChunkType] = None,
-        include_asset_urls: bool = False,
+        include_asset_urls: Optional[bool] = None,
     ) -> DocumentChunkListResponse:
         """List current-revision chunks for one canonical document."""
         params: Dict[str, Any] = _build_chunk_list_params(
@@ -67,7 +75,7 @@ class Documents(SyncAPIResource):
         document_id: str,
         document_chunk_id: str,
         *,
-        include_asset_urls: bool = False,
+        include_asset_urls: Optional[bool] = None,
     ) -> DocumentChunkResponse:
         """Get one current-revision chunk for one canonical document."""
         params: Dict[str, Any] = _build_chunk_get_params(
@@ -93,11 +101,19 @@ class Documents(SyncAPIResource):
 class AsyncDocuments(AsyncAPIResource):
     """Asynchronous interface for ``/v1/documents`` endpoints."""
 
-    async def list(self, *, namespace: Optional[str] = None) -> DocumentListResponse:
+    async def list(
+        self,
+        *,
+        namespace: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> DocumentListResponse:
         """List canonical documents in a namespace."""
-        params: Dict[str, Any] = {}
-        if namespace is not None:
-            params["namespace"] = namespace
+        params: Dict[str, Any] = _build_document_list_params(
+            namespace=namespace,
+            page=page,
+            page_size=page_size,
+        )
 
         return await self._request(
             "GET",
@@ -121,7 +137,7 @@ class AsyncDocuments(AsyncAPIResource):
         page: int = 1,
         page_size: int = 50,
         chunk_type: Optional[DocumentChunkType] = None,
-        include_asset_urls: bool = False,
+        include_asset_urls: Optional[bool] = None,
     ) -> DocumentChunkListResponse:
         """List current-revision chunks for one canonical document."""
         params: Dict[str, Any] = _build_chunk_list_params(
@@ -143,7 +159,7 @@ class AsyncDocuments(AsyncAPIResource):
         document_id: str,
         document_chunk_id: str,
         *,
-        include_asset_urls: bool = False,
+        include_asset_urls: Optional[bool] = None,
     ) -> DocumentChunkResponse:
         """Get one current-revision chunk for one canonical document."""
         params: Dict[str, Any] = _build_chunk_get_params(
@@ -166,12 +182,28 @@ class AsyncDocuments(AsyncAPIResource):
         )
 
 
+def _build_document_list_params(
+    *,
+    namespace: Optional[str],
+    page: int,
+    page_size: int,
+) -> Dict[str, Any]:
+    params: Dict[str, Any] = {}
+    if namespace is not None:
+        params["namespace"] = namespace
+    if page != 1:
+        params["page"] = page
+    if page_size != 50:
+        params["page_size"] = page_size
+    return params
+
+
 def _build_chunk_list_params(
     *,
     page: int,
     page_size: int,
     chunk_type: Optional[DocumentChunkType],
-    include_asset_urls: bool,
+    include_asset_urls: Optional[bool],
 ) -> Dict[str, Any]:
     params: Dict[str, Any] = {}
     if page != 1:
@@ -180,12 +212,12 @@ def _build_chunk_list_params(
         params["page_size"] = page_size
     if chunk_type is not None:
         params["chunk_type"] = chunk_type
-    if include_asset_urls:
-        params["include_asset_urls"] = True
+    if include_asset_urls is not None:
+        params["include_asset_urls"] = include_asset_urls
     return params
 
 
-def _build_chunk_get_params(*, include_asset_urls: bool) -> Dict[str, Any]:
-    if not include_asset_urls:
+def _build_chunk_get_params(*, include_asset_urls: Optional[bool]) -> Dict[str, Any]:
+    if include_asset_urls is None:
         return {}
-    return {"include_asset_urls": True}
+    return {"include_asset_urls": include_asset_urls}

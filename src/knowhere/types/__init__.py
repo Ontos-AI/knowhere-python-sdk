@@ -9,6 +9,7 @@ from knowhere.types.document import (
     DocumentChunkPagination,
     DocumentChunkResponse,
     DocumentChunkType,
+    DocumentListPagination,
     DocumentListResponse,
 )
 from knowhere.types.job import Job, JobError, JobResult
@@ -53,6 +54,7 @@ __all__: list[str] = [
     "DocumentChunkPagination",
     "DocumentChunkResponse",
     "DocumentChunkType",
+    "DocumentListPagination",
     "DocumentListResponse",
     # retrieval
     "RetrievalChannel",

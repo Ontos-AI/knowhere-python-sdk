@@ -537,9 +537,14 @@ response = client.retrieval.query(
 ### List, get, and archive documents
 
 ```python
-document_list = client.documents.list(namespace="support-center")
+document_list = client.documents.list(
+    namespace="support-center",
+    page=1,
+    page_size=50,
+)
 for document in document_list.documents:
     print(document.document_id, document.status, document.source_file_name)
+print(document_list.pagination.total_pages)
 
 document = client.documents.get("doc_123")
 print(document.current_job_result_id)
@@ -552,6 +557,9 @@ chunks = client.documents.list_chunks(
 )
 for chunk in chunks.chunks:
     print(chunk.id, chunk.content)
+
+# Set include_asset_urls=True to request 7-day asset_url values for
+# image and table chunks when available.
 
 image_chunk = client.documents.get_chunk(
     "doc_123",

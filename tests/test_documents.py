@@ -55,23 +55,45 @@ class TestDocumentsResource:
                 json={
                     "namespace": "support-center",
                     "documents": [_make_document()],
+                    "pagination": {
+                        "page": 2,
+                        "page_size": 25,
+                        "total": 26,
+                        "total_pages": 2,
+                    },
                 },
             )
         )
 
-        response = sync_client.documents.list(namespace="support-center")
+        response = sync_client.documents.list(
+            namespace="support-center",
+            page=2,
+            page_size=25,
+        )
 
         assert route.called
         assert route.calls[0].request.url.params["namespace"] == "support-center"
+        assert route.calls[0].request.url.params["page"] == "2"
+        assert route.calls[0].request.url.params["page_size"] == "25"
         assert response.namespace == "support-center"
         assert response.documents[0].document_id == "doc_123"
+        assert response.pagination.total_pages == 2
 
     @respx.mock
     def test_list_documents_omits_namespace_when_defaulted(self, sync_client: Any) -> None:
         route = respx.get(DOCUMENTS_URL).mock(
             return_value=httpx.Response(
                 200,
-                json={"namespace": "default", "documents": []},
+                json={
+                    "namespace": "default",
+                    "documents": [],
+                    "pagination": {
+                        "page": 1,
+                        "page_size": 50,
+                        "total": 0,
+                        "total_pages": 0,
+                    },
+                },
             )
         )
 
@@ -81,6 +103,27 @@ class TestDocumentsResource:
         assert dict(route.calls[0].request.url.params) == {}
         assert response.namespace == "default"
         assert response.documents == []
+        assert response.pagination.total == 0
+
+    @respx.mock
+    def test_list_documents_accepts_legacy_unpaginated_response(self, sync_client: Any) -> None:
+        route = respx.get(DOCUMENTS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "namespace": "default",
+                    "documents": [_make_document()],
+                },
+            )
+        )
+
+        response = sync_client.documents.list()
+
+        assert route.called
+        assert response.pagination.page == 1
+        assert response.pagination.page_size == 1
+        assert response.pagination.total == 1
+        assert response.pagination.total_pages == 1
 
     @respx.mock
     def test_get_document_returns_document_state(self, sync_client: Any) -> None:
@@ -161,8 +204,36 @@ class TestDocumentsResource:
         assert response.pagination.total == 0
 
     @respx.mock
+    def test_list_chunks_accepts_explicit_asset_url_control(
+        self, sync_client: Any
+    ) -> None:
+        route = respx.get(f"{DOCUMENTS_URL}/doc_123/chunks").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "document_id": "doc_123",
+                    "namespace": "support-center",
+                    "job_result_id": "result_123",
+                    "job_id": "job_123",
+                    "chunks": [],
+                    "pagination": {
+                        "page": 1,
+                        "page_size": 50,
+                        "total": 0,
+                        "total_pages": 0,
+                    },
+                },
+            )
+        )
+
+        sync_client.documents.list_chunks("doc_123", include_asset_urls=False)
+
+        assert route.called
+        assert route.calls[0].request.url.params["include_asset_urls"] == "false"
+
+    @respx.mock
     @pytest.mark.asyncio
-    async def test_async_get_chunk_requests_asset_urls_only_when_needed(
+    async def test_async_get_chunk_accepts_explicit_asset_url_control(
         self,
         async_client: Any,
     ) -> None:

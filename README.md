@@ -96,7 +96,8 @@ chunks = client.documents.list_chunks(
     document_id,
     page=1,
     page_size=50,
-    chunk_type="text",
+    chunk_type="image",
+    include_asset_urls=True,
 )
 print(chunks.pagination.total)
 if chunks.chunks:
@@ -106,6 +107,7 @@ if chunks.chunks:
         include_asset_urls=True,
     )
     print(chunk.chunk.content)
+    print(chunk.chunk.asset_url)  # Requested 7-day URL for image/table chunks.
 
 client.documents.archive(document_id)
 ```
@@ -113,9 +115,14 @@ client.documents.archive(document_id)
 You can also list documents in a namespace:
 
 ```python
-documents = client.documents.list(namespace="support-center")
+documents = client.documents.list(
+    namespace="support-center",
+    page=1,
+    page_size=50,
+)
 for document in documents.documents:
     print(document.document_id, document.status)
+print(documents.pagination.total_pages)
 ```
 
 Retrieval supports exclusions when clients want follow-up results that avoid
