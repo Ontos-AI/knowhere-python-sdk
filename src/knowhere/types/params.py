@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Literal
 
 from typing_extensions import TypedDict
+
+ApiVersion = Literal["v1", "v2"]
 
 
 class ParsingParams(TypedDict, total=False):

@@ -16,6 +16,7 @@ from knowhere.types.result import (
     DocNav,
     ImageChunk,
     Manifest,
+    PageChunk,
     ParseResult,
     SlimChunk,
     TableChunk,
@@ -39,9 +40,7 @@ def _safeZipPath(member_name: str, target_dir: str) -> str:
     """Validate that a ZIP member path does not escape *target_dir* (Zip Slip)."""
     abs_path: str = os.path.normpath(os.path.join(target_dir, member_name))
     if not abs_path.startswith(os.path.normpath(target_dir)):
-        raise KnowhereError(
-            f"Zip Slip detected: '{member_name}' escapes target directory."
-        )
+        raise KnowhereError(f"Zip Slip detected: '{member_name}' escapes target directory.")
     return abs_path
 
 
@@ -81,6 +80,31 @@ def _extractFilePath(raw: Dict[str, Any]) -> Optional[str]:
     return fallback
 
 
+def _extractContentSource(
+    raw: Dict[str, Any],
+    default: Optional[str] = None,
+) -> Optional[str]:
+    """Return the chunk content source from snake_case or camelCase payloads."""
+    raw_content_source: Any = raw.get("content_source", raw.get("contentSource"))
+    if isinstance(raw_content_source, str) and raw_content_source:
+        return raw_content_source
+    return default
+
+
+def _extractPageContent(raw: Dict[str, Any]) -> str:
+    """Return page display content, preferring explicit content then summary."""
+    raw_content: Any = raw.get("content")
+    if isinstance(raw_content, str) and raw_content:
+        return raw_content
+
+    metadata: Any = raw.get("metadata", {})
+    if isinstance(metadata, dict):
+        raw_summary: Any = metadata.get("summary")
+        if isinstance(raw_summary, str):
+            return raw_summary
+    return ""
+
+
 def _buildChunks(
     raw_chunks: List[Dict[str, Any]],
     zf: zipfile.ZipFile,
@@ -90,15 +114,26 @@ def _buildChunks(
 
     for raw in raw_chunks:
         chunk_type: str = raw.get("type", "text")
+        chunk: Chunk
 
-        if chunk_type == "image":
+        if chunk_type == "page":
+            chunk = PageChunk(
+                chunk_id=raw.get("chunk_id", ""),
+                type="page",
+                content_source=_extractContentSource(raw, "summary"),
+                content=_extractPageContent(raw),
+                path=raw.get("path"),
+                metadata=raw.get("metadata", {}),
+            )
+        elif chunk_type == "image":
             image_data: bytes = b""
             file_path: Optional[str] = _extractFilePath(raw)
             if file_path:
                 image_data = _readZipBytes(zf, file_path) or b""
-            chunk: Chunk = ImageChunk(
+            chunk = ImageChunk(
                 chunk_id=raw.get("chunk_id", ""),
                 type="image",
+                content_source=_extractContentSource(raw),
                 content=raw.get("content", ""),
                 path=raw.get("path"),
                 file_path=file_path,
@@ -113,6 +148,7 @@ def _buildChunks(
             chunk = TableChunk(
                 chunk_id=raw.get("chunk_id", ""),
                 type="table",
+                content_source=_extractContentSource(raw),
                 content=raw.get("content", ""),
                 path=raw.get("path"),
                 file_path=file_path,
@@ -123,6 +159,7 @@ def _buildChunks(
             chunk = TextChunk(
                 chunk_id=raw.get("chunk_id", ""),
                 type="text",
+                content_source=_extractContentSource(raw, "content"),
                 content=raw.get("content", ""),
                 path=raw.get("path"),
                 metadata=raw.get("metadata", {}),
@@ -181,16 +218,12 @@ def parseResultZip(
     # -- DocNav (current worker output) --
     doc_nav_text: Optional[str] = _readZipText(zf, "doc_nav.json")
     doc_nav: Optional[DocNav] = (
-        DocNav.model_validate(json.loads(doc_nav_text))
-        if doc_nav_text
-        else None
+        DocNav.model_validate(json.loads(doc_nav_text)) if doc_nav_text else None
     )
 
     # -- Hierarchy (legacy — current worker no longer emits this) --
     hierarchy_text: Optional[str] = _readZipText(zf, "hierarchy.json")
-    hierarchy: Optional[Any] = (
-        json.loads(hierarchy_text) if hierarchy_text else None
-    )
+    hierarchy: Optional[Any] = json.loads(hierarchy_text) if hierarchy_text else None
 
     # -- Optimized sidecar files --
     chunks_slim_text: Optional[str] = _readZipText(zf, "chunks_slim.json")

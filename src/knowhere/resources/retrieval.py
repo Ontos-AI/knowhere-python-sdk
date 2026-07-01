@@ -6,11 +6,13 @@ from typing import Any, Dict, Optional
 
 from knowhere.resources._base import AsyncAPIResource, SyncAPIResource
 from knowhere.types.retrieval import (
+    RetrievalChunkType,
     RetrievalChannel,
     RetrievalFilterMode,
     RetrievalQueryResponse,
     RetrievalSectionExclusion,
 )
+from knowhere.types.params import ApiVersion
 
 
 class Retrieval(SyncAPIResource):
@@ -24,6 +26,7 @@ class Retrieval(SyncAPIResource):
         top_k: Optional[int] = None,
         use_agentic: Optional[bool] = None,
         data_type: Optional[int] = None,
+        chunk_types: Optional[list[RetrievalChunkType]] = None,
         signal_paths: Optional[list[str]] = None,
         filter_mode: Optional[RetrievalFilterMode] = None,
         channels: Optional[list[RetrievalChannel]] = None,
@@ -33,6 +36,7 @@ class Retrieval(SyncAPIResource):
         internal_recall_k: Optional[int] = None,
         exclude_document_ids: Optional[list[str]] = None,
         exclude_sections: Optional[list[RetrievalSectionExclusion]] = None,
+        api_version: Optional[ApiVersion] = None,
     ) -> RetrievalQueryResponse:
         """Query published documents in a namespace."""
         body: Dict[str, Any] = {"query": query}
@@ -44,6 +48,8 @@ class Retrieval(SyncAPIResource):
             body["use_agentic"] = use_agentic
         if data_type is not None:
             body["data_type"] = data_type
+        if chunk_types is not None:
+            body["chunk_types"] = chunk_types
         if signal_paths is not None:
             body["signal_paths"] = signal_paths
         if filter_mode is not None:
@@ -65,7 +71,7 @@ class Retrieval(SyncAPIResource):
 
         return self._request(
             "POST",
-            "v1/retrieval/query",
+            self._versionedPath("retrieval/query", api_version),
             body=body,
             cast_to=RetrievalQueryResponse,
         )
@@ -82,6 +88,7 @@ class AsyncRetrieval(AsyncAPIResource):
         top_k: Optional[int] = None,
         use_agentic: Optional[bool] = None,
         data_type: Optional[int] = None,
+        chunk_types: Optional[list[RetrievalChunkType]] = None,
         signal_paths: Optional[list[str]] = None,
         filter_mode: Optional[RetrievalFilterMode] = None,
         channels: Optional[list[RetrievalChannel]] = None,
@@ -91,6 +98,7 @@ class AsyncRetrieval(AsyncAPIResource):
         internal_recall_k: Optional[int] = None,
         exclude_document_ids: Optional[list[str]] = None,
         exclude_sections: Optional[list[RetrievalSectionExclusion]] = None,
+        api_version: Optional[ApiVersion] = None,
     ) -> RetrievalQueryResponse:
         """Query published documents in a namespace."""
         body: Dict[str, Any] = {"query": query}
@@ -102,6 +110,8 @@ class AsyncRetrieval(AsyncAPIResource):
             body["use_agentic"] = use_agentic
         if data_type is not None:
             body["data_type"] = data_type
+        if chunk_types is not None:
+            body["chunk_types"] = chunk_types
         if signal_paths is not None:
             body["signal_paths"] = signal_paths
         if filter_mode is not None:
@@ -123,7 +133,7 @@ class AsyncRetrieval(AsyncAPIResource):
 
         return await self._request(
             "POST",
-            "v1/retrieval/query",
+            self._versionedPath("retrieval/query", api_version),
             body=body,
             cast_to=RetrievalQueryResponse,
         )

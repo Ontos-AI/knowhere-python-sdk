@@ -9,10 +9,12 @@ from knowhere.types.result import (
     BaseChunk,
     Checksum,
     Chunk,
+    ChunkMetadata,
     FileIndex,
     ImageChunk,
     ImageFileInfo,
     Manifest,
+    PageChunk,
     ParseResult,
     ProcessingCost,
     ProcessingMetadata,
@@ -254,6 +256,7 @@ class TestManifestModel:
                 text_chunks=3,
                 image_chunks=1,
                 table_chunks=1,
+                page_chunks=0,
                 total_pages=2,
             )
         )
@@ -266,12 +269,8 @@ class TestManifestModel:
             files=FileIndex(
                 chunks="chunks.json",
                 markdown="full.md",
-                images=[
-                    ImageFileInfo(id="IMG_1", file_path="images/IMG_1.jpg")
-                ],
-                tables=[
-                    TableFileInfo(id="TBL_1", file_path="tables/TBL_1.csv")
-                ],
+                images=[ImageFileInfo(id="IMG_1", file_path="images/IMG_1.jpg")],
+                tables=[TableFileInfo(id="TBL_1", file_path="tables/TBL_1.csv")],
             )
         )
         assert manifest.files is not None
@@ -334,6 +333,7 @@ class TestStatisticsModel:
         assert stats.text_chunks == 0
         assert stats.image_chunks == 0
         assert stats.table_chunks == 0
+        assert stats.page_chunks == 0
         assert stats.total_pages == 0
 
 
@@ -421,7 +421,7 @@ class TestBaseChunkModel:
         chunk: BaseChunk = BaseChunk(
             chunk_id="chunk_3",
             type="text",
-            metadata={"tokens": ["a", "b"], "length": 10},
+            metadata=ChunkMetadata(tokens=["a", "b"], length=10),
         )
         assert chunk.metadata.tokens == ["a", "b"]
         assert chunk.metadata.length == 10
@@ -484,9 +484,7 @@ class TestImageChunkModel:
         assert chunk.data == b""
 
     def test_format_property_from_file_path(self) -> None:
-        chunk: ImageChunk = ImageChunk(
-            chunk_id="IMG_3", file_path="images/IMG_3.png"
-        )
+        chunk: ImageChunk = ImageChunk(chunk_id="IMG_3", file_path="images/IMG_3.png")
         assert chunk.format == "png"
 
     def test_format_property_none_without_file_path(self) -> None:
@@ -498,9 +496,7 @@ class TestImageChunkModel:
         assert isinstance(chunk, BaseChunk)
 
     def test_data_excluded_from_serialization(self) -> None:
-        chunk: ImageChunk = ImageChunk(
-            chunk_id="IMG_6", data=b"secret bytes"
-        )
+        chunk: ImageChunk = ImageChunk(chunk_id="IMG_6", data=b"secret bytes")
         dumped: Dict[str, Any] = chunk.model_dump()
         assert "data" not in dumped
 
@@ -535,11 +531,39 @@ class TestTableChunkModel:
         assert isinstance(chunk, BaseChunk)
 
     def test_html_excluded_from_serialization(self) -> None:
-        chunk: TableChunk = TableChunk(
-            chunk_id="TBL_4", html="<table></table>"
-        )
+        chunk: TableChunk = TableChunk(chunk_id="TBL_4", html="<table></table>")
         dumped: Dict[str, Any] = chunk.model_dump()
         assert "html" not in dumped
+
+
+# ---------------------------------------------------------------------------
+# PageChunk model
+# ---------------------------------------------------------------------------
+
+
+class TestPageChunkModel:
+    """Verify PageChunk fields and defaults."""
+
+    def test_from_dict(self) -> None:
+        chunk: PageChunk = PageChunk(
+            chunk_id="page_1",
+            content_source="summary",
+            content="Overview of pages 4-6",
+            metadata=ChunkMetadata(
+                page_nums=[4, 5, 6],
+                entities=[{"text": "refund", "label": "topic"}],
+            ),
+        )
+
+        assert chunk.chunk_id == "page_1"
+        assert chunk.type == "page"
+        assert chunk.content_source == "summary"
+        assert chunk.metadata.page_nums == [4, 5, 6]
+        assert chunk.metadata.entities == [{"text": "refund", "label": "topic"}]
+
+    def test_is_instance_of_base_chunk(self) -> None:
+        chunk: PageChunk = PageChunk(chunk_id="page_2")
+        assert isinstance(chunk, BaseChunk)
 
 
 # ---------------------------------------------------------------------------
@@ -560,6 +584,7 @@ def _build_parse_result(
             text_chunks=1,
             image_chunks=1,
             table_chunks=1,
+            page_chunks=0,
             total_pages=2,
         ),
     )
@@ -658,7 +683,24 @@ class TestParseResult:
         assert len(result.text_chunks) == 0
         assert len(result.image_chunks) == 0
         assert len(result.table_chunks) == 0
+        assert len(result.page_chunks) == 0
         assert result.getChunk("anything") is None
+
+    def test_page_chunks_filters_correctly(self) -> None:
+        result: ParseResult = _build_parse_result(
+            chunks=[
+                PageChunk(
+                    chunk_id="page_1",
+                    content_source="summary",
+                    content="Page summary",
+                    metadata=ChunkMetadata(page_nums=[1, 2]),
+                )
+            ]
+        )
+
+        assert len(result.page_chunks) == 1
+        assert result.page_chunks[0].chunk_id == "page_1"
+        assert result.page_chunks[0].metadata.page_nums == [1, 2]
 
     def test_full_markdown_accessible(self) -> None:
         result: ParseResult = _build_parse_result()

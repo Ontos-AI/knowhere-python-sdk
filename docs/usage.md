@@ -93,6 +93,19 @@ for chunk in result.text_chunks:
     print(chunk.content[:80])
 ```
 
+To use the v2 page-memory API, pass `api_version="v2"` on the client or per
+call:
+
+```python
+client = knowhere.Knowhere(api_key="sk_...", api_version="v2")
+result = client.parse(url="https://example.com/report.pdf")
+
+for page in result.page_chunks:
+    print(page.content_source)       # "summary"
+    print(page.content[:120])        # page-level summary
+    print(page.metadata.page_nums)   # [4, 5, 6]
+```
+
 ---
 
 ## Parsing Documents
@@ -133,6 +146,7 @@ result = client.parse(file=pdf_bytes, file_name="report.pdf")
 | `data_id` | `str \| None` | `None` | Your own correlation/idempotency identifier (max 128 chars). |
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration (see below). |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
+| `api_version` | `"v1" \| "v2" \| None` | `None` | Override the client's API version for this parse. Use `"v2"` for page-memory ingestion. |
 | `poll_interval` | `float` | `10.0` | Initial polling interval in seconds. |
 | `poll_timeout` | `float` | `1800.0` | Maximum time to wait for completion (30 min). |
 | `verify_checksum` | `bool` | `True` | Verify SHA-256 checksum of the downloaded ZIP. |
@@ -207,6 +221,7 @@ result.statistics.total_chunks    # 152
 result.statistics.text_chunks     # 120
 result.statistics.image_chunks    # 22
 result.statistics.table_chunks    # 10
+result.statistics.page_chunks     # 48
 result.statistics.total_pages     # 48
 
 # Full markdown — the entire document as markdown
@@ -219,6 +234,7 @@ print(len(result.chunks))         # 152
 result.text_chunks                # List[TextChunk]
 result.image_chunks               # List[ImageChunk]
 result.table_chunks               # List[TableChunk]
+result.page_chunks                # List[PageChunk]
 
 # Lookup by ID
 chunk = result.getChunk("chunk_42")
@@ -248,8 +264,8 @@ result.save("./output/report/")
 
 ## Chunk Types
 
-Every chunk shares a base set of fields (`chunk_id`, `type`, `content`, `path`,
-`metadata`). Worker metadata is kept in the `metadata` dict — it is **not**
+Every chunk shares a base set of fields (`chunk_id`, `type`, `content_source`,
+`content`, `path`, `metadata`). Worker metadata is kept in the `metadata` model — it is **not**
 flattened to top-level chunk properties.
 
 ### Base fields (all chunk types)
@@ -257,10 +273,11 @@ flattened to top-level chunk properties.
 | Field | Type | Description |
 |-------|------|-------------|
 | `chunk_id` | `str` | Unique identifier |
-| `type` | `str` | `"text"`, `"image"`, or `"table"` |
+| `type` | `str` | `"text"`, `"image"`, `"table"`, or `"page"` |
+| `content_source` | `str \| None` | What `content` represents. Page chunks usually use `"summary"`; text chunks default to `"content"`. |
 | `content` | `str` | Text content or placeholder |
 | `path` | `str \| None` | Document structure path |
-| `metadata` | `dict` | Raw worker metadata (tokens, keywords, summary, length, page_nums, etc.) |
+| `metadata` | `ChunkMetadata` | Raw worker metadata (tokens, keywords, summary, length, page_nums, entities, etc.) |
 
 ### TextChunk
 
@@ -268,8 +285,8 @@ flattened to top-level chunk properties.
 for chunk in result.text_chunks:
     print(f"[{chunk.chunk_id}] {chunk.content[:60]}...")
     # Metadata is in chunk.metadata, not flattened:
-    keywords = chunk.metadata.get("keywords", [])
-    summary = chunk.metadata.get("summary")
+    keywords = chunk.metadata.keywords or []
+    summary = chunk.metadata.summary
     if keywords:
         print(f"  Keywords: {', '.join(keywords)}")
     if summary:
@@ -304,6 +321,20 @@ for img in result.image_chunks:
 for tbl in result.table_chunks:
     print(f"{tbl.file_path}: {tbl.html[:100]}...")
     tbl.save("./output/tables/")  # writes HTML file to disk
+```
+
+### PageChunk
+
+Page chunks are returned by the v2 page-memory API. Their `content` is the
+page-level summary, and `metadata.page_nums` gives the citation pages.
+
+```python
+for page in result.page_chunks:
+    pages = page.metadata.page_nums or []
+    print(page.content_source)  # "summary"
+    print(page.content)
+    print(pages)
+    print(page.metadata.entities)
 ```
 
 ---
@@ -351,6 +382,7 @@ print(result.statistics)
 | `data_id` | `str \| None` | `None` | Your own correlation/idempotency identifier. |
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration. |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
+| `api_version` | `"v1" \| "v2" \| None` | `None` | Override the client's API version for this request. Use `"v2"` for page-memory ingestion. |
 
 Returns a `Job` object:
 
@@ -412,6 +444,8 @@ The poller uses adaptive backoff: it starts at `poll_interval` and gradually inc
 result = client.jobs.load(job_result)
 # or pass a URL directly:
 result = client.jobs.load("https://storage.example.com/result.zip")
+# or resolve a job id through v2:
+result = client.jobs.load("job_123", api_version="v2")
 ```
 
 ---
@@ -470,6 +504,8 @@ retryable `ConflictError` using the server error code `ABORTED`.
 response = client.retrieval.query(
     namespace="support-center",
     query="How do I pair a Bluetooth headset?",
+    api_version="v2",
+    chunk_types=["page"],
     top_k=5,
 )
 
@@ -486,12 +522,14 @@ print(response.evidence_text)        # rendered evidence context, when returned
 print(response.stop_reason)          # agentic termination reason, when returned
 print(response.failure_reason)       # no-answer reason, when returned
 for ref in response.referenced_chunks:
-    print(ref.chunk_id, ref.document_id, ref.chunk_type)
-    print(ref.section_path, ref.file_path, ref.job_id, ref.asset_url)
+    print(ref.chunk_id, ref.document_id, ref.chunk_type, ref.content_source)
+    print(ref.section_path, ref.file_path, ref.job_id, ref.asset_url, ref.metadata)
 
 # Legacy results are always available
 for result in response.results:
+    print(result.chunk_id)
     print(result.content)
+    print(result.content_source)
     print(result.score)
     print(result.source.document_id)
     print(result.source.source_file_name)
@@ -501,6 +539,8 @@ for result in response.results:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `use_agentic` | `bool \| None` | `None` | Force agentic (`True`) or legacy (`False`) retrieval. `None` uses server default. |
+| `chunk_types` | `list["text" \| "image" \| "table" \| "page"] \| None` | `None` | Restrict retrieval to the selected chunk types. |
+| `data_type` | `int \| None` | `None` | Deprecated server selector; `7` maps to page chunks and `8` maps to text+image+table. Prefer `chunk_types`. |
 
 Retrieval results expose `content`, not the older parse-result `text` field.
 Media results may include `asset_url` when the server can sign the referenced
@@ -510,9 +550,12 @@ Each retrieval result uses one canonical source reference shape:
 
 ```python
 result.content
+result.chunk_id  # Optional[str]
 result.chunk_type
+result.content_source
 result.score
 result.asset_url  # Optional[str]
+result.metadata   # Optional[dict]
 result.source.document_id
 result.source.source_file_name
 result.source.section_path

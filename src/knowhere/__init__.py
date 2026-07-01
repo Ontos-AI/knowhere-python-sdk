@@ -46,9 +46,10 @@ from knowhere.types.document import (
     DocumentListResponse,
 )
 from knowhere.types.job import Job, JobError, JobProgress, JobResult
-from knowhere.types.params import ParsingParams, WebhookConfig
+from knowhere.types.params import ApiVersion, ParsingParams, WebhookConfig
 from knowhere.types.retrieval import (
     RetrievalChannel,
+    RetrievalChunkType,
     RetrievalFilterMode,
     RetrievalReferencedChunk,
     RetrievalSectionExclusion,
@@ -64,6 +65,7 @@ from knowhere.types.result import (
     ImageChunk,
     ImageFileInfo,
     Manifest,
+    PageChunk,
     ParseResult,
     ProcessingCost,
     ProcessingMetadata,
@@ -117,6 +119,7 @@ __all__: list[str] = [
     "DocumentListResponse",
     # Retrieval types
     "RetrievalChannel",
+    "RetrievalChunkType",
     "RetrievalFilterMode",
     "RetrievalReferencedChunk",
     "RetrievalSectionExclusion",
@@ -126,6 +129,7 @@ __all__: list[str] = [
     # Result types
     "ParseResult",
     "Manifest",
+    "PageChunk",
     "Statistics",
     "Checksum",
     "FileIndex",
@@ -142,6 +146,7 @@ __all__: list[str] = [
     "Chunk",
     # Param types
     "ParsingParams",
+    "ApiVersion",
     "WebhookConfig",
     # Callback types
     "UploadProgressCallback",

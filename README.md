@@ -23,13 +23,21 @@ import knowhere
 
 client = knowhere.Knowhere(api_key="sk_...")
 
-result = client.parse(url="https://example.com/report.pdf")
+result = client.parse(
+    url="https://example.com/report.pdf",
+    api_version="v2",  # Opt into the v2 page-memory API.
+)
 
 print(result.statistics.total_chunks)
 print(result.full_markdown[:200])
 
 for chunk in result.text_chunks:
     print(chunk.content[:80])
+
+for page in result.page_chunks:
+    print(page.content_source)       # "summary"
+    print(page.content[:120])        # page-level summary
+    print(page.metadata.page_nums)   # [4, 5, 6]
 ```
 
 ## Retrieval and document lifecycle
@@ -59,6 +67,8 @@ After the job is done and published, query the canonical document content:
 response = client.retrieval.query(
     namespace="support-center",
     query="How do I reset Bluetooth pairing?",
+    api_version="v2",
+    chunk_types=["page"],
     top_k=5,
     channels=["path", "term"],
     filter_mode="keep",
@@ -72,9 +82,11 @@ print(response.stop_reason)
 print(response.failure_reason)
 
 for reference in response.referenced_chunks:
-    print(reference.chunk_id, reference.document_id, reference.asset_url)
+    print(reference.chunk_id, reference.chunk_type, reference.content_source)
+    print(reference.metadata, reference.asset_url)
 
 for result in response.results:
+    print(result.chunk_id, result.chunk_type, result.content_source)
     print(result.content)
     print(result.score)
     print(result.source.source_file_name, result.source.section_path)
@@ -96,8 +108,9 @@ chunks = client.documents.list_chunks(
     document_id,
     page=1,
     page_size=50,
-    chunk_type="image",
+    chunk_type="page",
     include_asset_urls=True,
+    api_version="v2",
 )
 print(chunks.pagination.total)
 if chunks.chunks:
@@ -107,7 +120,8 @@ if chunks.chunks:
         include_asset_urls=True,
     )
     print(chunk.chunk.content)
-    print(chunk.chunk.asset_url)  # Requested 7-day URL for image/table chunks.
+    print(chunk.chunk.metadata.get("page_nums"))  # Page citations.
+    print(chunk.chunk.asset_url)  # Requested 7-day URL when available.
 
 client.documents.archive(document_id)
 ```
@@ -164,8 +178,15 @@ result = client.parse(url="https://example.com/report.pdf")
 
 # Text chunks
 for chunk in result.text_chunks:
-    print(chunk.keywords)
-    print(chunk.summary)
+    print(chunk.metadata.keywords)
+    print(chunk.metadata.summary)
+
+# Page chunks (v2 page-memory results)
+for chunk in result.page_chunks:
+    print(chunk.content_source)      # "summary"
+    print(chunk.content[:120])
+    print(chunk.metadata.page_nums)  # citation pages
+    print(chunk.metadata.entities)
 
 # Image chunks (raw bytes loaded from ZIP)
 for chunk in result.image_chunks:

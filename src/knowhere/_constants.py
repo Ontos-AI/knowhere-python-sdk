@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 # Base URL for the Knowhere API
 DEFAULT_BASE_URL: str = "https://api.knowhereto.ai"
 
@@ -26,7 +28,7 @@ POLL_BACKOFF_MULTIPLIER: float = 1.2
 POLL_BACKOFF_THRESHOLD: float = 60.0
 
 # API version prefix
-API_VERSION: str = "v1"
+API_VERSION: Literal["v1"] = "v1"
 
 # Terminal job statuses that indicate polling should stop
 TERMINAL_STATUSES: frozenset[str] = frozenset({"done", "failed"})

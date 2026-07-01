@@ -55,7 +55,7 @@ class DocumentListResponse(BaseModel):
         return payload
 
 
-DocumentChunkType = Literal["text", "image", "table"]
+DocumentChunkType = Literal["text", "image", "table", "page"]
 
 
 class DocumentChunkPagination(BaseModel):
@@ -73,6 +73,7 @@ class DocumentChunk(BaseModel):
     id: str
     chunk_id: str
     chunk_type: DocumentChunkType
+    content_source: Optional[str] = None
     content: Optional[str] = None
     section_id: Optional[str] = None
     section_path: Optional[str] = None

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Type, TypeVar
 
 from knowhere._base_client import AsyncAPIClient, SyncAPIClient
+from knowhere.types.params import ApiVersion
 
 T = TypeVar("T")
 
@@ -16,6 +17,14 @@ class SyncAPIResource:
 
     def __init__(self, client: SyncAPIClient) -> None:
         self._client = client
+
+    def _versionedPath(
+        self,
+        path: str,
+        api_version: Optional[ApiVersion] = None,
+    ) -> str:
+        version = api_version or self._client.api_version
+        return f"{version}/{path.lstrip('/')}"
 
     def _request(
         self,
@@ -47,6 +56,14 @@ class AsyncAPIResource:
 
     def __init__(self, client: AsyncAPIClient) -> None:
         self._client = client
+
+    def _versionedPath(
+        self,
+        path: str,
+        api_version: Optional[ApiVersion] = None,
+    ) -> str:
+        version = api_version or self._client.api_version
+        return f"{version}/{path.lstrip('/')}"
 
     async def _request(
         self,

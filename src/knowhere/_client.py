@@ -23,7 +23,7 @@ from knowhere.resources.documents import AsyncDocuments, Documents
 from knowhere.resources.jobs import AsyncJobs, Jobs
 from knowhere.resources.retrieval import AsyncRetrieval, Retrieval
 from knowhere.types.job import Job, JobResult
-from knowhere.types.params import ParsingParams, WebhookConfig
+from knowhere.types.params import ApiVersion, ParsingParams, WebhookConfig
 from knowhere.types.result import ParseResult
 
 _logger = getLogger()
@@ -66,6 +66,7 @@ class Knowhere(SyncAPIClient):
         document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
+        api_version: Optional[ApiVersion] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -84,6 +85,7 @@ class Knowhere(SyncAPIClient):
         document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
+        api_version: Optional[ApiVersion] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -102,6 +104,7 @@ class Knowhere(SyncAPIClient):
         document_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
+        api_version: Optional[ApiVersion] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         poll_timeout: float = DEFAULT_POLL_TIMEOUT,
         verify_checksum: bool = True,
@@ -127,6 +130,7 @@ class Knowhere(SyncAPIClient):
                 document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
+                api_version=api_version,
             )
         else:
             resolved_name: Optional[str] = file_name
@@ -140,6 +144,7 @@ class Knowhere(SyncAPIClient):
                 document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
+                api_version=api_version,
             )
             assert file is not None
             self.jobs.upload(job, file, on_progress=on_upload_progress)
@@ -150,10 +155,15 @@ class Knowhere(SyncAPIClient):
             poll_interval=poll_interval,
             poll_timeout=poll_timeout,
             on_progress=on_poll_progress,
+            api_version=api_version,
         )
 
         # Load and return parsed result
-        return self.jobs.load(job_result, verify_checksum=verify_checksum)
+        return self.jobs.load(
+            job_result,
+            verify_checksum=verify_checksum,
+            api_version=api_version,
+        )
 
 
 class AsyncKnowhere(AsyncAPIClient):
@@ -191,6 +201,7 @@ class AsyncKnowhere(AsyncAPIClient):
         document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
+        api_version: Optional[ApiVersion] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -209,6 +220,7 @@ class AsyncKnowhere(AsyncAPIClient):
         document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
+        api_version: Optional[ApiVersion] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -227,6 +239,7 @@ class AsyncKnowhere(AsyncAPIClient):
         document_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
+        api_version: Optional[ApiVersion] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         poll_timeout: float = DEFAULT_POLL_TIMEOUT,
         verify_checksum: bool = True,
@@ -248,6 +261,7 @@ class AsyncKnowhere(AsyncAPIClient):
                 document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
+                api_version=api_version,
             )
         else:
             resolved_name: Optional[str] = file_name
@@ -261,6 +275,7 @@ class AsyncKnowhere(AsyncAPIClient):
                 document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
+                api_version=api_version,
             )
             assert file is not None
             await self.jobs.upload(job, file, on_progress=on_upload_progress)
@@ -270,8 +285,11 @@ class AsyncKnowhere(AsyncAPIClient):
             poll_interval=poll_interval,
             poll_timeout=poll_timeout,
             on_progress=on_poll_progress,
+            api_version=api_version,
         )
 
         return await self.jobs.load(
-            job_result, verify_checksum=verify_checksum
+            job_result,
+            verify_checksum=verify_checksum,
+            api_version=api_version,
         )

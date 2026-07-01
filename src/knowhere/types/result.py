@@ -55,6 +55,7 @@ class Statistics(BaseModel):
     text_chunks: Optional[int] = 0
     image_chunks: Optional[int] = 0
     table_chunks: Optional[int] = 0
+    page_chunks: Optional[int] = 0
     total_pages: Optional[int] = 0
 
 
@@ -193,6 +194,7 @@ class ChunkMetadata(BaseModel):
 
     length: Optional[int] = None
     page_nums: Optional[List[int]] = None
+    entities: Optional[List[Dict[str, Any]]] = None
     tokens: Optional[List[str]] = None
     keywords: Optional[List[str]] = None
     summary: Optional[str] = None
@@ -208,6 +210,7 @@ class BaseChunk(BaseModel):
 
     chunk_id: str
     type: str
+    content_source: Optional[str] = None
     content: str = ""
     path: Optional[str] = None
     metadata: ChunkMetadata = Field(default_factory=ChunkMetadata)
@@ -245,13 +248,9 @@ class ImageChunk(BaseChunk):
         dir_path: Path = Path(directory)
         dir_path.mkdir(parents=True, exist_ok=True)
 
-        raw_name: str = os.path.basename(
-            self.file_path or f"{self.chunk_id}.bin"
-        )
+        raw_name: str = os.path.basename(self.file_path or f"{self.chunk_id}.bin")
         safe_name: str = _sanitizeFilename(raw_name)
-        out_path: Path = _ensurePathWithinDirectory(
-            dir_path, dir_path / safe_name
-        )
+        out_path: Path = _ensurePathWithinDirectory(dir_path, dir_path / safe_name)
         out_path.write_bytes(self.data)
         return out_path
 
@@ -268,19 +267,21 @@ class TableChunk(BaseChunk):
         dir_path: Path = Path(directory)
         dir_path.mkdir(parents=True, exist_ok=True)
 
-        raw_name: str = os.path.basename(
-            self.file_path or f"{self.chunk_id}.html"
-        )
+        raw_name: str = os.path.basename(self.file_path or f"{self.chunk_id}.html")
         safe_name: str = _sanitizeFilename(raw_name)
-        out_path: Path = _ensurePathWithinDirectory(
-            dir_path, dir_path / safe_name
-        )
+        out_path: Path = _ensurePathWithinDirectory(dir_path, dir_path / safe_name)
         out_path.write_text(self.html, encoding="utf-8")
         return out_path
 
 
+class PageChunk(BaseChunk):
+    """A page chunk. Its content usually contains a page-level summary."""
+
+    type: str = "page"
+
+
 # Union of all chunk types
-Chunk = Union[TextChunk, ImageChunk, TableChunk]
+Chunk = Union[TextChunk, ImageChunk, TableChunk, PageChunk]
 
 
 class SlimChunk(BaseModel):
@@ -370,6 +371,11 @@ class ParseResult:
     def table_chunks(self) -> List[TableChunk]:
         """Return only table chunks."""
         return [c for c in self.chunks if isinstance(c, TableChunk)]
+
+    @property
+    def page_chunks(self) -> List[PageChunk]:
+        """Return only page chunks."""
+        return [c for c in self.chunks if isinstance(c, PageChunk)]
 
     @property
     def job_id(self) -> Optional[str]:

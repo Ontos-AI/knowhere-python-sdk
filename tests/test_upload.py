@@ -129,7 +129,7 @@ class TestUploadNonSeekableBinaryIO:
             def seekable(self) -> bool:
                 return False
 
-            def readinto(self, b: bytearray) -> int:
+            def readinto(self, b: Any) -> int:
                 remaining: bytes = self._data[self._pos:]
                 n: int = min(len(b), len(remaining))
                 b[:n] = remaining[:n]
