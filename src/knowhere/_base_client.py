@@ -31,7 +31,6 @@ from knowhere._exceptions import (
 from knowhere._logging import getLogger, redactSensitiveHeaders
 from knowhere._response import APIResponse
 from knowhere._version import __version__
-from knowhere.types.params import ApiVersion
 
 T = TypeVar("T")
 
@@ -66,7 +65,6 @@ class BaseClient:
     timeout: float
     upload_timeout: float
     max_retries: int
-    api_version: ApiVersion
     _default_headers: Dict[str, str]
 
     def __init__(
@@ -77,7 +75,6 @@ class BaseClient:
         timeout: Optional[float] = None,
         upload_timeout: Optional[float] = None,
         max_retries: Optional[int] = None,
-        api_version: ApiVersion = API_VERSION,
         default_headers: Optional[Dict[str, str]] = None,
     ) -> None:
         # Resolve: arg > env > default
@@ -94,7 +91,6 @@ class BaseClient:
             upload_timeout if upload_timeout is not None else DEFAULT_UPLOAD_TIMEOUT
         )
         self.max_retries = max_retries if max_retries is not None else DEFAULT_MAX_RETRIES
-        self.api_version = api_version
         self._default_headers = default_headers or {}
 
     def _buildHeaders(self) -> Dict[str, str]:
@@ -112,8 +108,8 @@ class BaseClient:
         if path.startswith("http://") or path.startswith("https://"):
             return path
         clean_path: str = path.lstrip("/")
-        if not clean_path.startswith(("v1/", "v2/")):
-            clean_path = f"{self.api_version}/{clean_path}"
+        if not clean_path.startswith("v2/"):
+            clean_path = f"{API_VERSION}/{clean_path}"
         return f"{self.base_url}/{clean_path}"
 
     def _parseErrorResponse(self, response: httpx.Response) -> Optional[Dict[str, Any]]:
@@ -222,7 +218,6 @@ class SyncAPIClient(BaseClient):
         timeout: Optional[float] = None,
         upload_timeout: Optional[float] = None,
         max_retries: Optional[int] = None,
-        api_version: ApiVersion = API_VERSION,
         default_headers: Optional[Dict[str, str]] = None,
     ) -> None:
         super().__init__(
@@ -231,7 +226,6 @@ class SyncAPIClient(BaseClient):
             timeout=timeout,
             upload_timeout=upload_timeout,
             max_retries=max_retries,
-            api_version=api_version,
             default_headers=default_headers,
         )
         self._client = httpx.Client(
@@ -372,7 +366,6 @@ class AsyncAPIClient(BaseClient):
         timeout: Optional[float] = None,
         upload_timeout: Optional[float] = None,
         max_retries: Optional[int] = None,
-        api_version: ApiVersion = API_VERSION,
         default_headers: Optional[Dict[str, str]] = None,
     ) -> None:
         super().__init__(
@@ -381,7 +374,6 @@ class AsyncAPIClient(BaseClient):
             timeout=timeout,
             upload_timeout=upload_timeout,
             max_retries=max_retries,
-            api_version=api_version,
             default_headers=default_headers,
         )
         self._client = httpx.AsyncClient(

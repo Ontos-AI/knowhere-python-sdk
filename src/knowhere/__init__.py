@@ -46,7 +46,7 @@ from knowhere.types.document import (
     DocumentListResponse,
 )
 from knowhere.types.job import Job, JobError, JobProgress, JobResult
-from knowhere.types.params import ApiVersion, ParsingParams, WebhookConfig
+from knowhere.types.params import ParsingParams, WebhookConfig
 from knowhere.types.retrieval import (
     RetrievalChannel,
     RetrievalChunkType,
@@ -146,7 +146,6 @@ __all__: list[str] = [
     "Chunk",
     # Param types
     "ParsingParams",
-    "ApiVersion",
     "WebhookConfig",
     # Callback types
     "UploadProgressCallback",

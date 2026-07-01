@@ -28,7 +28,7 @@ POLL_BACKOFF_MULTIPLIER: float = 1.2
 POLL_BACKOFF_THRESHOLD: float = 60.0
 
 # API version prefix
-API_VERSION: Literal["v1"] = "v1"
+API_VERSION: Literal["v2"] = "v2"
 
 # Terminal job statuses that indicate polling should stop
 TERMINAL_STATUSES: frozenset[str] = frozenset({"done", "failed"})

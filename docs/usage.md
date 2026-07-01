@@ -93,11 +93,9 @@ for chunk in result.text_chunks:
     print(chunk.content[:80])
 ```
 
-To use the v2 page-memory API, pass `api_version="v2"` on the client or per
-call:
+Page-memory chunks are returned by the v2 API used by this SDK:
 
 ```python
-client = knowhere.Knowhere(api_key="sk_...", api_version="v2")
 result = client.parse(url="https://example.com/report.pdf")
 
 for page in result.page_chunks:
@@ -146,7 +144,6 @@ result = client.parse(file=pdf_bytes, file_name="report.pdf")
 | `data_id` | `str \| None` | `None` | Your own correlation/idempotency identifier (max 128 chars). |
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration (see below). |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
-| `api_version` | `"v1" \| "v2" \| None` | `None` | Override the client's API version for this parse. Use `"v2"` for page-memory ingestion. |
 | `poll_interval` | `float` | `10.0` | Initial polling interval in seconds. |
 | `poll_timeout` | `float` | `1800.0` | Maximum time to wait for completion (30 min). |
 | `verify_checksum` | `bool` | `True` | Verify SHA-256 checksum of the downloaded ZIP. |
@@ -382,7 +379,6 @@ print(result.statistics)
 | `data_id` | `str \| None` | `None` | Your own correlation/idempotency identifier. |
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration. |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
-| `api_version` | `"v1" \| "v2" \| None` | `None` | Override the client's API version for this request. Use `"v2"` for page-memory ingestion. |
 
 Returns a `Job` object:
 
@@ -444,8 +440,8 @@ The poller uses adaptive backoff: it starts at `poll_interval` and gradually inc
 result = client.jobs.load(job_result)
 # or pass a URL directly:
 result = client.jobs.load("https://storage.example.com/result.zip")
-# or resolve a job id through v2:
-result = client.jobs.load("job_123", api_version="v2")
+# or resolve a job id before loading:
+result = client.jobs.load("job_123")
 ```
 
 ---
@@ -504,7 +500,6 @@ retryable `ConflictError` using the server error code `ABORTED`.
 response = client.retrieval.query(
     namespace="support-center",
     query="How do I pair a Bluetooth headset?",
-    api_version="v2",
     chunk_types=["page"],
     top_k=5,
 )

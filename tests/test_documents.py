@@ -11,8 +11,7 @@ import respx
 from tests.conftest import BASE_URL
 
 
-DOCUMENTS_URL: str = f"{BASE_URL}/v1/documents"
-DOCUMENTS_V2_URL: str = f"{BASE_URL}/v2/documents"
+DOCUMENTS_URL: str = f"{BASE_URL}/v2/documents"
 
 
 def _make_document(status: str = "active") -> Dict[str, Any]:
@@ -178,11 +177,11 @@ class TestDocumentsResource:
         assert response.pagination.total_pages == 2
 
     @respx.mock
-    def test_list_chunks_supports_page_chunks_and_explicit_v2_endpoint(
+    def test_list_chunks_supports_page_chunks(
         self,
         sync_client: Any,
     ) -> None:
-        route = respx.get(f"{DOCUMENTS_V2_URL}/doc_123/chunks").mock(
+        route = respx.get(f"{DOCUMENTS_URL}/doc_123/chunks").mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -204,7 +203,6 @@ class TestDocumentsResource:
         response = sync_client.documents.list_chunks(
             "doc_123",
             chunk_type="page",
-            api_version="v2",
         )
 
         assert route.called

@@ -14,7 +14,6 @@ from knowhere.types.document import (
 )
 from knowhere.types.job import Job, JobError, JobResult
 from knowhere.types.params import ParsingParams, WebhookConfig
-from knowhere.types.params import ApiVersion
 from knowhere.types.retrieval import (
     RetrievalChannel,
     RetrievalChunkType,
@@ -70,7 +69,6 @@ __all__: list[str] = [
     "RetrievalResult",
     # params
     "ParsingParams",
-    "ApiVersion",
     "WebhookConfig",
     # result
     "BaseChunk",

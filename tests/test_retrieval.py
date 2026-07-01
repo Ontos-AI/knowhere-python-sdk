@@ -12,8 +12,7 @@ import respx
 from tests.conftest import BASE_URL
 
 
-RETRIEVAL_QUERY_URL: str = f"{BASE_URL}/v1/retrieval/query"
-RETRIEVAL_QUERY_V2_URL: str = f"{BASE_URL}/v2/retrieval/query"
+RETRIEVAL_QUERY_URL: str = f"{BASE_URL}/v2/retrieval/query"
 
 
 def _make_retrieval_response() -> Dict[str, Any]:
@@ -157,11 +156,11 @@ class TestRetrievalQuery:
         assert not hasattr(response.results[0], "section_id")
 
     @respx.mock
-    def test_query_sends_chunk_types_to_explicit_v2_endpoint(
+    def test_query_sends_chunk_types(
         self,
         sync_client: Any,
     ) -> None:
-        route = respx.post(RETRIEVAL_QUERY_V2_URL).mock(
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
             return_value=httpx.Response(200, json=_make_retrieval_response())
         )
 
@@ -169,7 +168,6 @@ class TestRetrievalQuery:
             query="refund policy",
             chunk_types=["page"],
             data_type=7,
-            api_version="v2",
         )
 
         assert route.called

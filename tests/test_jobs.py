@@ -15,9 +15,7 @@ from tests.conftest import BASE_URL
 # Helpers
 # ---------------------------------------------------------------------------
 
-JOBS_URL: str = f"{BASE_URL}/v1/jobs"
-JOBS_V2_URL: str = f"{BASE_URL}/v2/jobs"
-
+JOBS_URL: str = f"{BASE_URL}/v2/jobs"
 
 # ---------------------------------------------------------------------------
 # jobs.create()
@@ -32,7 +30,7 @@ class TestJobsCreate:
         self,
         sync_client: Any,
     ) -> None:
-        """POST /v1/jobs with source_type=url sends correct payload."""
+        """POST /v2/jobs with source_type=url sends correct payload."""
         response_body: Dict[str, Any] = {
             "job_id": "job_test123",
             "status": "pending",
@@ -60,7 +58,7 @@ class TestJobsCreate:
         sync_client: Any,
         mock_job_response: Dict[str, Any],
     ) -> None:
-        """POST /v1/jobs with source_type=file returns upload_url."""
+        """POST /v2/jobs with source_type=file returns upload_url."""
         route = respx.post(JOBS_URL).mock(return_value=httpx.Response(200, json=mock_job_response))
 
         job = sync_client.jobs.create(
@@ -105,36 +103,6 @@ class TestJobsCreate:
         assert body["namespace"] == "support-center"
         assert body["document_id"] == "doc_123"
 
-    @respx.mock
-    def test_create_can_use_explicit_v2_endpoint(
-        self,
-        sync_client: Any,
-    ) -> None:
-        """api_version selects the endpoint version without leaking into JSON."""
-        response_body: Dict[str, Any] = {
-            "job_id": "job_v2",
-            "status": "pending",
-            "source_type": "url",
-            "namespace": "support-center",
-        }
-        route = respx.post(JOBS_V2_URL).mock(return_value=httpx.Response(200, json=response_body))
-
-        job = sync_client.jobs.create(
-            source_type="url",
-            source_url="https://example.com/doc.pdf",
-            namespace="support-center",
-            api_version="v2",
-        )
-
-        assert route.called
-        body: Dict[str, Any] = json.loads(route.calls[0].request.read())
-        assert body == {
-            "source_type": "url",
-            "source_url": "https://example.com/doc.pdf",
-            "namespace": "support-center",
-        }
-        assert job.job_id == "job_v2"
-
 
 # ---------------------------------------------------------------------------
 # jobs.get()
@@ -150,7 +118,7 @@ class TestJobsGet:
         sync_client: Any,
         mock_job_result_response: Dict[str, Any],
     ) -> None:
-        """GET /v1/jobs/{job_id} returns a JobResult."""
+        """GET /v2/jobs/{job_id} returns a JobResult."""
         job_id: str = "job_test123"
         route = respx.get(f"{JOBS_URL}/{job_id}").mock(
             return_value=httpx.Response(200, json=mock_job_result_response)
@@ -162,23 +130,6 @@ class TestJobsGet:
         assert result.job_id == job_id
         assert result.status == "done"
         assert result.is_done is True
-
-    @respx.mock
-    def test_get_can_use_explicit_v2_endpoint(
-        self,
-        sync_client: Any,
-        mock_job_result_response: Dict[str, Any],
-    ) -> None:
-        """GET job status can target the v2 jobs API."""
-        job_id: str = "job_test123"
-        route = respx.get(f"{JOBS_V2_URL}/{job_id}").mock(
-            return_value=httpx.Response(200, json=mock_job_result_response)
-        )
-
-        result = sync_client.jobs.get(job_id, api_version="v2")
-
-        assert route.called
-        assert result.job_id == job_id
 
 
 # ---------------------------------------------------------------------------
@@ -259,35 +210,6 @@ class TestJobsWait:
         assert result.status == "done"
         assert route.call_count == 2
 
-    @respx.mock
-    def test_wait_can_use_explicit_v2_endpoint(
-        self,
-        sync_client: Any,
-    ) -> None:
-        """wait() polls the selected API version."""
-        job_id: str = "job_v2"
-        route = respx.get(f"{JOBS_V2_URL}/{job_id}").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "job_id": job_id,
-                    "status": "done",
-                    "source_type": "url",
-                    "result_url": "https://storage.example.com/result.zip",
-                },
-            )
-        )
-
-        result = sync_client.jobs.wait(
-            job_id,
-            poll_interval=0.01,
-            poll_timeout=5.0,
-            api_version="v2",
-        )
-
-        assert route.called
-        assert result.status == "done"
-
 
 # ---------------------------------------------------------------------------
 # jobs.load()
@@ -354,15 +276,15 @@ class TestJobsLoad:
         assert parse_result.document_id == "doc_123"
 
     @respx.mock
-    def test_load_resolves_job_id_with_explicit_v2_endpoint(
+    def test_load_resolves_job_id(
         self,
         sync_client: Any,
         sample_zip_bytes: bytes,
     ) -> None:
-        """Passing a job id resolves the result URL from the selected API version."""
+        """Passing a job id resolves the result URL before loading the ZIP."""
         job_id: str = "job_v2"
         result_url: str = "https://storage.example.com/result.zip"
-        status_route = respx.get(f"{JOBS_V2_URL}/{job_id}").mock(
+        status_route = respx.get(f"{JOBS_URL}/{job_id}").mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -386,7 +308,6 @@ class TestJobsLoad:
         parse_result = sync_client.jobs.load(
             job_id,
             verify_checksum=False,
-            api_version="v2",
         )
 
         assert status_route.called

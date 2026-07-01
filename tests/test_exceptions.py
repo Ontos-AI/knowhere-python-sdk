@@ -43,7 +43,7 @@ def _make_response(
     return httpx.Response(
         status_code=status_code,
         headers=headers or {},
-        request=httpx.Request("GET", "https://api.test.knowhereto.ai/v1/jobs/j1"),
+        request=httpx.Request("GET", "https://api.test.knowhereto.ai/v2/jobs/j1"),
     )
 
 

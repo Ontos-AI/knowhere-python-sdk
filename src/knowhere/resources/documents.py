@@ -12,11 +12,10 @@ from knowhere.types.document import (
     DocumentChunkType,
     DocumentListResponse,
 )
-from knowhere.types.params import ApiVersion
 
 
 class Documents(SyncAPIResource):
-    """Synchronous interface for ``/v1/documents`` endpoints."""
+    """Synchronous interface for ``/v2/documents`` endpoints."""
 
     def list(
         self,
@@ -24,7 +23,6 @@ class Documents(SyncAPIResource):
         namespace: Optional[str] = None,
         page: int = 1,
         page_size: int = 50,
-        api_version: Optional[ApiVersion] = None,
     ) -> DocumentListResponse:
         """List canonical documents in a namespace."""
         params: Dict[str, Any] = _build_document_list_params(
@@ -35,21 +33,16 @@ class Documents(SyncAPIResource):
 
         return self._request(
             "GET",
-            self._versionedPath("documents", api_version),
+            self._versionedPath("documents"),
             params=params or None,
             cast_to=DocumentListResponse,
         )
 
-    def get(
-        self,
-        document_id: str,
-        *,
-        api_version: Optional[ApiVersion] = None,
-    ) -> Document:
+    def get(self, document_id: str) -> Document:
         """Get one canonical document by ID."""
         return self._request(
             "GET",
-            self._versionedPath(f"documents/{document_id}", api_version),
+            self._versionedPath(f"documents/{document_id}"),
             cast_to=Document,
         )
 
@@ -61,7 +54,6 @@ class Documents(SyncAPIResource):
         page_size: int = 50,
         chunk_type: Optional[DocumentChunkType] = None,
         include_asset_urls: Optional[bool] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> DocumentChunkListResponse:
         """List current-revision chunks for one canonical document."""
         params: Dict[str, Any] = _build_chunk_list_params(
@@ -73,7 +65,7 @@ class Documents(SyncAPIResource):
 
         return self._request(
             "GET",
-            self._versionedPath(f"documents/{document_id}/chunks", api_version),
+            self._versionedPath(f"documents/{document_id}/chunks"),
             params=params or None,
             cast_to=DocumentChunkListResponse,
         )
@@ -84,7 +76,6 @@ class Documents(SyncAPIResource):
         document_chunk_id: str,
         *,
         include_asset_urls: Optional[bool] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> DocumentChunkResponse:
         """Get one current-revision chunk for one canonical document."""
         params: Dict[str, Any] = _build_chunk_get_params(
@@ -93,30 +84,22 @@ class Documents(SyncAPIResource):
 
         return self._request(
             "GET",
-            self._versionedPath(
-                f"documents/{document_id}/chunks/{document_chunk_id}",
-                api_version,
-            ),
+            self._versionedPath(f"documents/{document_id}/chunks/{document_chunk_id}"),
             params=params or None,
             cast_to=DocumentChunkResponse,
         )
 
-    def archive(
-        self,
-        document_id: str,
-        *,
-        api_version: Optional[ApiVersion] = None,
-    ) -> Document:
+    def archive(self, document_id: str) -> Document:
         """Archive one canonical document by ID."""
         return self._request(
             "POST",
-            self._versionedPath(f"documents/{document_id}/archive", api_version),
+            self._versionedPath(f"documents/{document_id}/archive"),
             cast_to=Document,
         )
 
 
 class AsyncDocuments(AsyncAPIResource):
-    """Asynchronous interface for ``/v1/documents`` endpoints."""
+    """Asynchronous interface for ``/v2/documents`` endpoints."""
 
     async def list(
         self,
@@ -124,7 +107,6 @@ class AsyncDocuments(AsyncAPIResource):
         namespace: Optional[str] = None,
         page: int = 1,
         page_size: int = 50,
-        api_version: Optional[ApiVersion] = None,
     ) -> DocumentListResponse:
         """List canonical documents in a namespace."""
         params: Dict[str, Any] = _build_document_list_params(
@@ -135,21 +117,16 @@ class AsyncDocuments(AsyncAPIResource):
 
         return await self._request(
             "GET",
-            self._versionedPath("documents", api_version),
+            self._versionedPath("documents"),
             params=params or None,
             cast_to=DocumentListResponse,
         )
 
-    async def get(
-        self,
-        document_id: str,
-        *,
-        api_version: Optional[ApiVersion] = None,
-    ) -> Document:
+    async def get(self, document_id: str) -> Document:
         """Get one canonical document by ID."""
         return await self._request(
             "GET",
-            self._versionedPath(f"documents/{document_id}", api_version),
+            self._versionedPath(f"documents/{document_id}"),
             cast_to=Document,
         )
 
@@ -161,7 +138,6 @@ class AsyncDocuments(AsyncAPIResource):
         page_size: int = 50,
         chunk_type: Optional[DocumentChunkType] = None,
         include_asset_urls: Optional[bool] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> DocumentChunkListResponse:
         """List current-revision chunks for one canonical document."""
         params: Dict[str, Any] = _build_chunk_list_params(
@@ -173,7 +149,7 @@ class AsyncDocuments(AsyncAPIResource):
 
         return await self._request(
             "GET",
-            self._versionedPath(f"documents/{document_id}/chunks", api_version),
+            self._versionedPath(f"documents/{document_id}/chunks"),
             params=params or None,
             cast_to=DocumentChunkListResponse,
         )
@@ -184,7 +160,6 @@ class AsyncDocuments(AsyncAPIResource):
         document_chunk_id: str,
         *,
         include_asset_urls: Optional[bool] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> DocumentChunkResponse:
         """Get one current-revision chunk for one canonical document."""
         params: Dict[str, Any] = _build_chunk_get_params(
@@ -193,24 +168,16 @@ class AsyncDocuments(AsyncAPIResource):
 
         return await self._request(
             "GET",
-            self._versionedPath(
-                f"documents/{document_id}/chunks/{document_chunk_id}",
-                api_version,
-            ),
+            self._versionedPath(f"documents/{document_id}/chunks/{document_chunk_id}"),
             params=params or None,
             cast_to=DocumentChunkResponse,
         )
 
-    async def archive(
-        self,
-        document_id: str,
-        *,
-        api_version: Optional[ApiVersion] = None,
-    ) -> Document:
+    async def archive(self, document_id: str) -> Document:
         """Archive one canonical document by ID."""
         return await self._request(
             "POST",
-            self._versionedPath(f"documents/{document_id}/archive", api_version),
+            self._versionedPath(f"documents/{document_id}/archive"),
             cast_to=Document,
         )
 

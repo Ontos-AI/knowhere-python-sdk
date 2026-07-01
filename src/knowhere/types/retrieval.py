@@ -28,7 +28,7 @@ class RetrievalSource(BaseModel):
 
 
 class RetrievalResult(BaseModel):
-    """Canonical chunk result returned by ``POST /v1/retrieval/query``."""
+    """Canonical chunk result returned by ``POST /v2/retrieval/query``."""
 
     chunk_id: Optional[str] = None
     chunk_type: str
@@ -58,7 +58,7 @@ class RetrievalReferencedChunk(BaseModel):
 
 
 class RetrievalQueryResponse(BaseModel):
-    """Response from ``POST /v1/retrieval/query``.
+    """Response from ``POST /v2/retrieval/query``.
 
     Three PRIMARY output fields for downstream agent consumption:
 

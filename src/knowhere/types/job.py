@@ -35,7 +35,7 @@ class JobProgress(BaseModel):
 
 
 class Job(BaseModel):
-    """Response from ``POST /v1/jobs`` — represents a newly created job."""
+    """Response from ``POST /v2/jobs`` — represents a newly created job."""
 
     job_id: str
     status: str
@@ -49,7 +49,7 @@ class Job(BaseModel):
 
 
 class JobResult(BaseModel):
-    """Response from ``GET /v1/jobs/{job_id}`` — full job status and result."""
+    """Response from ``GET /v2/jobs/{job_id}`` — full job status and result."""
 
     job_id: str
     status: str

@@ -6,6 +6,7 @@ import time
 from typing import Optional
 
 from knowhere._constants import (
+    API_VERSION,
     DEFAULT_POLL_INTERVAL,
     DEFAULT_POLL_TIMEOUT,
     MAX_POLL_INTERVAL,
@@ -17,7 +18,6 @@ from knowhere._exceptions import JobFailedError, PollingTimeoutError
 from knowhere._logging import getLogger
 from knowhere._types import PollProgressCallback
 from knowhere.types.job import JobResult
-from knowhere.types.params import ApiVersion
 
 _logger = getLogger()
 
@@ -50,9 +50,8 @@ def syncPoll(
     poll_interval: float = DEFAULT_POLL_INTERVAL,
     poll_timeout: float = DEFAULT_POLL_TIMEOUT,
     on_progress: Optional[PollProgressCallback] = None,
-    api_version: Optional[ApiVersion] = None,
 ) -> JobResult:
-    """Poll ``GET /v1/jobs/{job_id}`` until a terminal status is reached.
+    """Poll ``GET /v2/jobs/{job_id}`` until a terminal status is reached.
 
     Uses adaptive backoff: after ``POLL_BACKOFF_THRESHOLD`` seconds the
     interval grows by ``POLL_BACKOFF_MULTIPLIER``, capped at
@@ -72,7 +71,7 @@ def syncPoll(
 
         job_result: JobResult = client._request(
             "GET",
-            f"{api_version or client.api_version}/jobs/{job_id}",
+            f"{API_VERSION}/jobs/{job_id}",
             cast_to=JobResult,
         )
 
@@ -104,7 +103,6 @@ async def asyncPoll(
     poll_interval: float = DEFAULT_POLL_INTERVAL,
     poll_timeout: float = DEFAULT_POLL_TIMEOUT,
     on_progress: Optional[PollProgressCallback] = None,
-    api_version: Optional[ApiVersion] = None,
 ) -> JobResult:
     """Async version of :func:`syncPoll`."""
     import asyncio
@@ -123,7 +121,7 @@ async def asyncPoll(
 
         job_result: JobResult = await client._request(
             "GET",
-            f"{api_version or client.api_version}/jobs/{job_id}",
+            f"{API_VERSION}/jobs/{job_id}",
             cast_to=JobResult,
         )
 

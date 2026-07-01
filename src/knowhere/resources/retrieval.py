@@ -12,11 +12,10 @@ from knowhere.types.retrieval import (
     RetrievalQueryResponse,
     RetrievalSectionExclusion,
 )
-from knowhere.types.params import ApiVersion
 
 
 class Retrieval(SyncAPIResource):
-    """Synchronous interface for ``/v1/retrieval`` endpoints."""
+    """Synchronous interface for ``/v2/retrieval`` endpoints."""
 
     def query(
         self,
@@ -36,7 +35,6 @@ class Retrieval(SyncAPIResource):
         internal_recall_k: Optional[int] = None,
         exclude_document_ids: Optional[list[str]] = None,
         exclude_sections: Optional[list[RetrievalSectionExclusion]] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> RetrievalQueryResponse:
         """Query published documents in a namespace."""
         body: Dict[str, Any] = {"query": query}
@@ -71,14 +69,14 @@ class Retrieval(SyncAPIResource):
 
         return self._request(
             "POST",
-            self._versionedPath("retrieval/query", api_version),
+            self._versionedPath("retrieval/query"),
             body=body,
             cast_to=RetrievalQueryResponse,
         )
 
 
 class AsyncRetrieval(AsyncAPIResource):
-    """Asynchronous interface for ``/v1/retrieval`` endpoints."""
+    """Asynchronous interface for ``/v2/retrieval`` endpoints."""
 
     async def query(
         self,
@@ -98,7 +96,6 @@ class AsyncRetrieval(AsyncAPIResource):
         internal_recall_k: Optional[int] = None,
         exclude_document_ids: Optional[list[str]] = None,
         exclude_sections: Optional[list[RetrievalSectionExclusion]] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> RetrievalQueryResponse:
         """Query published documents in a namespace."""
         body: Dict[str, Any] = {"query": query}
@@ -133,7 +130,7 @@ class AsyncRetrieval(AsyncAPIResource):
 
         return await self._request(
             "POST",
-            self._versionedPath("retrieval/query", api_version),
+            self._versionedPath("retrieval/query"),
             body=body,
             cast_to=RetrievalQueryResponse,
         )

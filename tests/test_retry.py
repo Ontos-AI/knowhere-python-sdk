@@ -18,7 +18,7 @@ from knowhere._exceptions import (
 from tests.conftest import BASE_URL
 
 
-JOBS_URL: str = f"{BASE_URL}/v1/jobs"
+JOBS_URL: str = f"{BASE_URL}/v2/jobs"
 JOB_ID: str = "job_retry_test"
 GET_URL: str = f"{JOBS_URL}/{JOB_ID}"
 

@@ -9,7 +9,7 @@ from pydantic import BaseModel, model_validator
 
 
 class Document(BaseModel):
-    """Canonical document state returned by ``/v1/documents`` endpoints."""
+    """Canonical document state returned by ``/v2/documents`` endpoints."""
 
     document_id: str
     namespace: str
@@ -31,7 +31,7 @@ class DocumentListPagination(BaseModel):
 
 
 class DocumentListResponse(BaseModel):
-    """Response from ``GET /v1/documents``."""
+    """Response from ``GET /v2/documents``."""
 
     namespace: str
     documents: list[Document]
@@ -86,7 +86,7 @@ class DocumentChunk(BaseModel):
 
 
 class DocumentChunkListResponse(BaseModel):
-    """Response from ``GET /v1/documents/{document_id}/chunks``."""
+    """Response from ``GET /v2/documents/{document_id}/chunks``."""
 
     document_id: str
     namespace: str
@@ -97,7 +97,7 @@ class DocumentChunkListResponse(BaseModel):
 
 
 class DocumentChunkResponse(BaseModel):
-    """Response from ``GET /v1/documents/{document_id}/chunks/{chunk_id}``."""
+    """Response from ``GET /v2/documents/{document_id}/chunks/{chunk_id}``."""
 
     document_id: str
     namespace: str

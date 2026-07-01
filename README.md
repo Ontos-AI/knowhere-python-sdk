@@ -25,7 +25,6 @@ client = knowhere.Knowhere(api_key="sk_...")
 
 result = client.parse(
     url="https://example.com/report.pdf",
-    api_version="v2",  # Opt into the v2 page-memory API.
 )
 
 print(result.statistics.total_chunks)
@@ -67,7 +66,6 @@ After the job is done and published, query the canonical document content:
 response = client.retrieval.query(
     namespace="support-center",
     query="How do I reset Bluetooth pairing?",
-    api_version="v2",
     chunk_types=["page"],
     top_k=5,
     channels=["path", "term"],
@@ -110,7 +108,6 @@ chunks = client.documents.list_chunks(
     page_size=50,
     chunk_type="page",
     include_asset_urls=True,
-    api_version="v2",
 )
 print(chunks.pagination.total)
 if chunks.chunks:

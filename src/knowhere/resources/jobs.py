@@ -19,14 +19,14 @@ from knowhere.lib.result_parser import parseResultZip
 from knowhere.lib.upload import asyncUploadFile, syncUploadFile
 from knowhere.resources._base import AsyncAPIResource, SyncAPIResource
 from knowhere.types.job import Job, JobResult
-from knowhere.types.params import ApiVersion, ParsingParams, WebhookConfig
+from knowhere.types.params import ParsingParams, WebhookConfig
 from knowhere.types.result import ParseResult
 
 _logger = getLogger()
 
 
 class Jobs(SyncAPIResource):
-    """Synchronous interface for the ``/v1/jobs`` endpoints."""
+    """Synchronous interface for the ``/v2/jobs`` endpoints."""
 
     def create(
         self,
@@ -39,7 +39,6 @@ class Jobs(SyncAPIResource):
         data_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> Job:
         """Create a new parsing job.
 
@@ -74,21 +73,16 @@ class Jobs(SyncAPIResource):
 
         return self._request(
             "POST",
-            self._versionedPath("jobs", api_version),
+            self._versionedPath("jobs"),
             body=body,
             cast_to=Job,
         )
 
-    def get(
-        self,
-        job_id: str,
-        *,
-        api_version: Optional[ApiVersion] = None,
-    ) -> JobResult:
+    def get(self, job_id: str) -> JobResult:
         """Retrieve the current status and result of a job."""
         return self._request(
             "GET",
-            self._versionedPath(f"jobs/{job_id}", api_version),
+            self._versionedPath(f"jobs/{job_id}"),
             cast_to=JobResult,
         )
 
@@ -131,7 +125,6 @@ class Jobs(SyncAPIResource):
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         poll_timeout: float = DEFAULT_POLL_TIMEOUT,
         on_progress: Optional[PollProgressCallback] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> JobResult:
         """Poll until the job reaches a terminal status."""
         return syncPoll(
@@ -140,7 +133,6 @@ class Jobs(SyncAPIResource):
             poll_interval=poll_interval,
             poll_timeout=poll_timeout,
             on_progress=on_progress,
-            api_version=api_version,
         )
 
     def load(
@@ -148,7 +140,6 @@ class Jobs(SyncAPIResource):
         job_result: Union[JobResult, str],
         *,
         verify_checksum: bool = True,
-        api_version: Optional[ApiVersion] = None,
     ) -> ParseResult:
         """Download and parse the result ZIP for a completed job.
 
@@ -171,7 +162,7 @@ class Jobs(SyncAPIResource):
                 namespace = None
                 document_id = None
             else:
-                resolved_job_result = self.get(job_result, api_version=api_version)
+                resolved_job_result = self.get(job_result)
                 if not resolved_job_result.result_url:
                     raise InvalidStateError("JobResult does not have a result_url.")
                 result_url = resolved_job_result.result_url
@@ -191,7 +182,7 @@ class Jobs(SyncAPIResource):
 
 
 class AsyncJobs(AsyncAPIResource):
-    """Asynchronous interface for the ``/v1/jobs`` endpoints."""
+    """Asynchronous interface for the ``/v2/jobs`` endpoints."""
 
     async def create(
         self,
@@ -204,7 +195,6 @@ class AsyncJobs(AsyncAPIResource):
         data_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> Job:
         """Create a new parsing job (async)."""
         body: Dict[str, Any] = {"source_type": source_type}
@@ -225,21 +215,16 @@ class AsyncJobs(AsyncAPIResource):
 
         return await self._request(
             "POST",
-            self._versionedPath("jobs", api_version),
+            self._versionedPath("jobs"),
             body=body,
             cast_to=Job,
         )
 
-    async def get(
-        self,
-        job_id: str,
-        *,
-        api_version: Optional[ApiVersion] = None,
-    ) -> JobResult:
+    async def get(self, job_id: str) -> JobResult:
         """Retrieve the current status and result of a job (async)."""
         return await self._request(
             "GET",
-            self._versionedPath(f"jobs/{job_id}", api_version),
+            self._versionedPath(f"jobs/{job_id}"),
             cast_to=JobResult,
         )
 
@@ -276,7 +261,6 @@ class AsyncJobs(AsyncAPIResource):
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         poll_timeout: float = DEFAULT_POLL_TIMEOUT,
         on_progress: Optional[PollProgressCallback] = None,
-        api_version: Optional[ApiVersion] = None,
     ) -> JobResult:
         """Poll until the job reaches a terminal status (async)."""
         return await asyncPoll(
@@ -285,7 +269,6 @@ class AsyncJobs(AsyncAPIResource):
             poll_interval=poll_interval,
             poll_timeout=poll_timeout,
             on_progress=on_progress,
-            api_version=api_version,
         )
 
     async def load(
@@ -293,7 +276,6 @@ class AsyncJobs(AsyncAPIResource):
         job_result: Union[JobResult, str],
         *,
         verify_checksum: bool = True,
-        api_version: Optional[ApiVersion] = None,
     ) -> ParseResult:
         """Download and parse the result ZIP (async)."""
         if isinstance(job_result, JobResult):
@@ -308,7 +290,7 @@ class AsyncJobs(AsyncAPIResource):
                 namespace = None
                 document_id = None
             else:
-                resolved_job_result = await self.get(job_result, api_version=api_version)
+                resolved_job_result = await self.get(job_result)
                 if not resolved_job_result.result_url:
                     raise InvalidStateError("JobResult does not have a result_url.")
                 result_url = resolved_job_result.result_url
