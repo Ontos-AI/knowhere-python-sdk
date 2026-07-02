@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 
 from knowhere.resources._base import AsyncAPIResource, SyncAPIResource
 from knowhere.types.retrieval import (
+    RetrievalChunkType,
     RetrievalChannel,
     RetrievalFilterMode,
     RetrievalQueryResponse,
@@ -14,7 +15,7 @@ from knowhere.types.retrieval import (
 
 
 class Retrieval(SyncAPIResource):
-    """Synchronous interface for ``/v1/retrieval`` endpoints."""
+    """Synchronous interface for ``/v2/retrieval`` endpoints."""
 
     def query(
         self,
@@ -24,6 +25,7 @@ class Retrieval(SyncAPIResource):
         top_k: Optional[int] = None,
         use_agentic: Optional[bool] = None,
         data_type: Optional[int] = None,
+        chunk_types: Optional[list[RetrievalChunkType]] = None,
         signal_paths: Optional[list[str]] = None,
         filter_mode: Optional[RetrievalFilterMode] = None,
         channels: Optional[list[RetrievalChannel]] = None,
@@ -44,6 +46,8 @@ class Retrieval(SyncAPIResource):
             body["use_agentic"] = use_agentic
         if data_type is not None:
             body["data_type"] = data_type
+        if chunk_types is not None:
+            body["chunk_types"] = chunk_types
         if signal_paths is not None:
             body["signal_paths"] = signal_paths
         if filter_mode is not None:
@@ -65,14 +69,14 @@ class Retrieval(SyncAPIResource):
 
         return self._request(
             "POST",
-            "v1/retrieval/query",
+            self._versionedPath("retrieval/query"),
             body=body,
             cast_to=RetrievalQueryResponse,
         )
 
 
 class AsyncRetrieval(AsyncAPIResource):
-    """Asynchronous interface for ``/v1/retrieval`` endpoints."""
+    """Asynchronous interface for ``/v2/retrieval`` endpoints."""
 
     async def query(
         self,
@@ -82,6 +86,7 @@ class AsyncRetrieval(AsyncAPIResource):
         top_k: Optional[int] = None,
         use_agentic: Optional[bool] = None,
         data_type: Optional[int] = None,
+        chunk_types: Optional[list[RetrievalChunkType]] = None,
         signal_paths: Optional[list[str]] = None,
         filter_mode: Optional[RetrievalFilterMode] = None,
         channels: Optional[list[RetrievalChannel]] = None,
@@ -102,6 +107,8 @@ class AsyncRetrieval(AsyncAPIResource):
             body["use_agentic"] = use_agentic
         if data_type is not None:
             body["data_type"] = data_type
+        if chunk_types is not None:
+            body["chunk_types"] = chunk_types
         if signal_paths is not None:
             body["signal_paths"] = signal_paths
         if filter_mode is not None:
@@ -123,7 +130,7 @@ class AsyncRetrieval(AsyncAPIResource):
 
         return await self._request(
             "POST",
-            "v1/retrieval/query",
+            self._versionedPath("retrieval/query"),
             body=body,
             cast_to=RetrievalQueryResponse,
         )

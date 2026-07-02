@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 
 RetrievalChannel = Literal["path", "content", "term"]
+RetrievalChunkType = Literal["text", "image", "table", "page"]
 RetrievalFilterMode = Literal["delete", "keep"]
 
 
@@ -27,12 +28,17 @@ class RetrievalSource(BaseModel):
 
 
 class RetrievalResult(BaseModel):
-    """Canonical chunk result returned by ``POST /v1/retrieval/query``."""
+    """Canonical chunk result returned by ``POST /v2/retrieval/query``."""
 
+    chunk_id: Optional[str] = None
     chunk_type: str
+    content_source: Optional[str] = None
     content: str
     score: Optional[float] = None
     asset_url: Optional[str] = None
+    source_chunk_path: Optional[str] = None
+    file_path: Optional[str] = None
+    metadata: Optional[dict[str, Any]] = None
     source: RetrievalSource
 
 
@@ -42,14 +48,17 @@ class RetrievalReferencedChunk(BaseModel):
     chunk_id: str
     document_id: str
     chunk_type: str
+    content_source: Optional[str] = None
     section_path: str
+    source_chunk_path: Optional[str] = None
     file_path: Optional[str] = None
     job_id: Optional[str] = None
     asset_url: Optional[str] = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class RetrievalQueryResponse(BaseModel):
-    """Response from ``POST /v1/retrieval/query``.
+    """Response from ``POST /v2/retrieval/query``.
 
     Three PRIMARY output fields for downstream agent consumption:
 

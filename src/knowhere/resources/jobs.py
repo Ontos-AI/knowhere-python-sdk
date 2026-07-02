@@ -26,7 +26,7 @@ _logger = getLogger()
 
 
 class Jobs(SyncAPIResource):
-    """Synchronous interface for the ``/v1/jobs`` endpoints."""
+    """Synchronous interface for the ``/v2/jobs`` endpoints."""
 
     def create(
         self,
@@ -71,11 +71,20 @@ class Jobs(SyncAPIResource):
         if webhook is not None:
             body["webhook"] = dict(webhook)
 
-        return self._request("POST", "v1/jobs", body=body, cast_to=Job)
+        return self._request(
+            "POST",
+            self._versionedPath("jobs"),
+            body=body,
+            cast_to=Job,
+        )
 
     def get(self, job_id: str) -> JobResult:
         """Retrieve the current status and result of a job."""
-        return self._request("GET", f"v1/jobs/{job_id}", cast_to=JobResult)
+        return self._request(
+            "GET",
+            self._versionedPath(f"jobs/{job_id}"),
+            cast_to=JobResult,
+        )
 
     def upload(
         self,
@@ -148,9 +157,17 @@ class Jobs(SyncAPIResource):
             namespace: Optional[str] = job_result.namespace
             document_id: Optional[str] = job_result.document_id
         else:
-            result_url = job_result
-            namespace = None
-            document_id = None
+            if job_result.startswith("http://") or job_result.startswith("https://"):
+                result_url = job_result
+                namespace = None
+                document_id = None
+            else:
+                resolved_job_result = self.get(job_result)
+                if not resolved_job_result.result_url:
+                    raise InvalidStateError("JobResult does not have a result_url.")
+                result_url = resolved_job_result.result_url
+                namespace = resolved_job_result.namespace
+                document_id = resolved_job_result.document_id
 
         response: httpx.Response = self._client._client.get(
             result_url, timeout=self._client.upload_timeout
@@ -165,7 +182,7 @@ class Jobs(SyncAPIResource):
 
 
 class AsyncJobs(AsyncAPIResource):
-    """Asynchronous interface for the ``/v1/jobs`` endpoints."""
+    """Asynchronous interface for the ``/v2/jobs`` endpoints."""
 
     async def create(
         self,
@@ -196,12 +213,19 @@ class AsyncJobs(AsyncAPIResource):
         if webhook is not None:
             body["webhook"] = dict(webhook)
 
-        return await self._request("POST", "v1/jobs", body=body, cast_to=Job)
+        return await self._request(
+            "POST",
+            self._versionedPath("jobs"),
+            body=body,
+            cast_to=Job,
+        )
 
     async def get(self, job_id: str) -> JobResult:
         """Retrieve the current status and result of a job (async)."""
         return await self._request(
-            "GET", f"v1/jobs/{job_id}", cast_to=JobResult
+            "GET",
+            self._versionedPath(f"jobs/{job_id}"),
+            cast_to=JobResult,
         )
 
     async def upload(
@@ -261,9 +285,17 @@ class AsyncJobs(AsyncAPIResource):
             namespace: Optional[str] = job_result.namespace
             document_id: Optional[str] = job_result.document_id
         else:
-            result_url = job_result
-            namespace = None
-            document_id = None
+            if job_result.startswith("http://") or job_result.startswith("https://"):
+                result_url = job_result
+                namespace = None
+                document_id = None
+            else:
+                resolved_job_result = await self.get(job_result)
+                if not resolved_job_result.result_url:
+                    raise InvalidStateError("JobResult does not have a result_url.")
+                result_url = resolved_job_result.result_url
+                namespace = resolved_job_result.namespace
+                document_id = resolved_job_result.document_id
 
         response: httpx.Response = await self._client._client.get(
             result_url, timeout=self._client.upload_timeout

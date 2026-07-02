@@ -13,7 +13,7 @@ from knowhere._exceptions import JobFailedError, PollingTimeoutError
 from tests.conftest import BASE_URL
 
 
-JOBS_URL: str = f"{BASE_URL}/v1/jobs"
+JOBS_URL: str = f"{BASE_URL}/v2/jobs"
 
 
 def _make_status_response(
@@ -21,7 +21,7 @@ def _make_status_response(
     status: str,
     error: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
-    """Build a mock GET /v1/jobs/{id} response with the given status."""
+    """Build a mock GET /v2/jobs/{id} response with the given status."""
     data: Dict[str, Any] = {
         "job_id": job_id,
         "status": status,

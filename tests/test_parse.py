@@ -15,7 +15,7 @@ import respx
 from tests.conftest import BASE_URL
 
 
-JOBS_URL: str = f"{BASE_URL}/v1/jobs"
+JOBS_URL: str = f"{BASE_URL}/v2/jobs"
 
 
 def _make_create_response(
@@ -23,7 +23,7 @@ def _make_create_response(
     source_type: str,
     upload_url: str | None = None,
 ) -> Dict[str, Any]:
-    """Build a mock POST /v1/jobs response (raw model data)."""
+    """Build a mock POST /v2/jobs response (raw model data)."""
     return {
         "job_id": job_id,
         "status": "waiting-file" if source_type == "file" else "pending",
@@ -37,7 +37,7 @@ def _make_create_response(
 
 
 def _make_done_response(job_id: str, result_url: str) -> Dict[str, Any]:
-    """Build a mock GET /v1/jobs/{id} response for a completed job."""
+    """Build a mock GET /v2/jobs/{id} response for a completed job."""
     return {
         "job_id": job_id,
         "status": "done",

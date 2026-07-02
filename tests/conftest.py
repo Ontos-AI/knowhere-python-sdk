@@ -62,7 +62,7 @@ async def async_client(api_key: str, base_url: str) -> Any:
 
 @pytest.fixture()
 def mock_job_response() -> Dict[str, Any]:
-    """Return a dict matching POST /v1/jobs response for a file upload job.
+    """Return a dict matching POST /v2/jobs response for a file upload job.
 
     The APIResponse.parse() calls model_validate() on the raw JSON, so
     the response body must match the Job model directly.
@@ -82,7 +82,7 @@ def mock_job_response() -> Dict[str, Any]:
 
 @pytest.fixture()
 def mock_job_result_response() -> Dict[str, Any]:
-    """Return a dict matching GET /v1/jobs/{id} for a completed job."""
+    """Return a dict matching GET /v2/jobs/{id} for a completed job."""
     return {
         "job_id": "job_test123",
         "status": "done",

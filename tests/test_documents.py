@@ -11,7 +11,7 @@ import respx
 from tests.conftest import BASE_URL
 
 
-DOCUMENTS_URL: str = f"{BASE_URL}/v1/documents"
+DOCUMENTS_URL: str = f"{BASE_URL}/v2/documents"
 
 
 def _make_document(status: str = "active") -> Dict[str, Any]:
@@ -32,6 +32,7 @@ def _make_document_chunk(chunk_type: str = "text") -> Dict[str, Any]:
         "id": "dchk_123",
         "chunk_id": "parser-chunk-1",
         "chunk_type": chunk_type,
+        "content_source": "summary" if chunk_type == "page" else "content",
         "content": "Chunk content",
         "section_id": "sec_123",
         "section_path": "Chapter 1",
@@ -176,6 +177,41 @@ class TestDocumentsResource:
         assert response.pagination.total_pages == 2
 
     @respx.mock
+    def test_list_chunks_supports_page_chunks(
+        self,
+        sync_client: Any,
+    ) -> None:
+        route = respx.get(f"{DOCUMENTS_URL}/doc_123/chunks").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "document_id": "doc_123",
+                    "namespace": "support-center",
+                    "job_result_id": "result_123",
+                    "job_id": "job_123",
+                    "chunks": [_make_document_chunk(chunk_type="page")],
+                    "pagination": {
+                        "page": 1,
+                        "page_size": 50,
+                        "total": 1,
+                        "total_pages": 1,
+                    },
+                },
+            )
+        )
+
+        response = sync_client.documents.list_chunks(
+            "doc_123",
+            chunk_type="page",
+        )
+
+        assert route.called
+        assert route.calls[0].request.url.params["chunk_type"] == "page"
+        assert response.chunks[0].chunk_type == "page"
+        assert response.chunks[0].content_source == "summary"
+        assert response.chunks[0].metadata["page_nums"] == [1]
+
+    @respx.mock
     def test_list_chunks_omits_default_query_params(self, sync_client: Any) -> None:
         route = respx.get(f"{DOCUMENTS_URL}/doc_123/chunks").mock(
             return_value=httpx.Response(
@@ -204,9 +240,7 @@ class TestDocumentsResource:
         assert response.pagination.total == 0
 
     @respx.mock
-    def test_list_chunks_accepts_explicit_asset_url_control(
-        self, sync_client: Any
-    ) -> None:
+    def test_list_chunks_accepts_explicit_asset_url_control(self, sync_client: Any) -> None:
         route = respx.get(f"{DOCUMENTS_URL}/doc_123/chunks").mock(
             return_value=httpx.Response(
                 200,

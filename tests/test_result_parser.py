@@ -17,6 +17,7 @@ from knowhere.types.result import (
     DocNav,
     ImageChunk,
     Manifest,
+    PageChunk,
     ParseResult,
     Statistics,
     TableChunk,
@@ -127,6 +128,7 @@ def _make_manifest(checksum_value: str = "") -> Dict[str, Any]:
             "text_chunks": 1,
             "image_chunks": 1,
             "table_chunks": 0,
+            "page_chunks": 0,
             "total_pages": 1,
         },
         "files": {
@@ -174,6 +176,7 @@ def _make_optimized_manifest() -> Dict[str, Any]:
             "text_chunks": 1,
             "image_chunks": 1,
             "table_chunks": 1,
+            "page_chunks": 0,
             "total_pages": None,
         },
     }
@@ -316,9 +319,9 @@ class TestParseValidZip:
                     }
                 ).encode("utf-8"),
                 "kb.csv": b"chunk_id,type\ntext_chunk_optimized,text\n",
-                "hierarchy.json": json.dumps(
-                    {"Default_Root": {"optimized.pdf": {}}}
-                ).encode("utf-8"),
+                "hierarchy.json": json.dumps({"Default_Root": {"optimized.pdf": {}}}).encode(
+                    "utf-8"
+                ),
                 "toc_hierarchies.json": json.dumps(
                     [{"toc_range": [1, 3], "scan_range": [1, 10]}]
                 ).encode("utf-8"),
@@ -367,9 +370,9 @@ class TestParseValidZip:
                     }
                 ).encode("utf-8"),
                 "kb.csv": b"chunk_id,type\ntext_chunk_optimized,text\n",
-                "hierarchy.json": json.dumps(
-                    {"Default_Root": {"optimized.pdf": {}}}
-                ).encode("utf-8"),
+                "hierarchy.json": json.dumps({"Default_Root": {"optimized.pdf": {}}}).encode(
+                    "utf-8"
+                ),
                 "toc_hierarchies.json": json.dumps(
                     [{"toc_range": [1, 3], "scan_range": [1, 10]}]
                 ).encode("utf-8"),
@@ -422,6 +425,7 @@ def _make_current_contract_manifest() -> Dict[str, Any]:
             "text_chunks": 1,
             "image_chunks": 1,
             "table_chunks": 0,
+            "page_chunks": 0,
             "total_pages": None,
         },
     }
@@ -543,6 +547,40 @@ class TestCurrentWorkerContract:
         assert result.hierarchy is None
         assert result.manifest is not None
 
+    def test_parses_page_chunks_with_content_source_and_page_metadata(self) -> None:
+        manifest = _make_optimized_manifest()
+        manifest["statistics"]["total_chunks"] = 1
+        manifest["statistics"]["text_chunks"] = 0
+        manifest["statistics"]["image_chunks"] = 0
+        manifest["statistics"]["table_chunks"] = 0
+        manifest["statistics"]["page_chunks"] = 1
+        chunks: List[Dict[str, Any]] = [
+            {
+                "chunk_id": "page_chunk_1",
+                "type": "page",
+                "contentSource": "summary",
+                "path": "Default_Root/report.pdf-->pages/4-6",
+                "metadata": {
+                    "page_nums": [4, 5, 6],
+                    "summary": "The document explains refund eligibility.",
+                    "entities": [{"text": "refund", "label": "topic"}],
+                },
+            }
+        ]
+        zip_bytes = _build_zip(manifest, chunks=chunks)
+
+        result = parseResultZip(zip_bytes, verify_checksum=False)
+
+        assert result.manifest.statistics is not None
+        assert result.manifest.statistics.page_chunks == 1
+        assert len(result.page_chunks) == 1
+        page_chunk = result.page_chunks[0]
+        assert isinstance(page_chunk, PageChunk)
+        assert page_chunk.content_source == "summary"
+        assert page_chunk.content == "The document explains refund eligibility."
+        assert page_chunk.metadata.page_nums == [4, 5, 6]
+        assert page_chunk.metadata.entities == [{"text": "refund", "label": "topic"}]
+
 
 # ---------------------------------------------------------------------------
 # Checksum verification
@@ -576,9 +614,7 @@ class TestChecksumVerification:
         assert result.manifest is not None
 
     def test_wrong_checksum_raises_checksum_error(self) -> None:
-        manifest: Dict[str, Any] = _make_manifest(
-            checksum_value="wrong_checksum_value"
-        )
+        manifest: Dict[str, Any] = _make_manifest(checksum_value="wrong_checksum_value")
         zip_bytes: bytes = _build_zip(manifest)
 
         with pytest.raises(ChecksumError):
@@ -616,13 +652,9 @@ class TestMissingRequiredFiles:
     def test_missing_chunks_returns_empty_chunks(self) -> None:
         """When chunks.json is missing, the result has no chunks."""
         manifest: Dict[str, Any] = _make_manifest()
-        zip_bytes: bytes = _build_zip(
-            manifest, include_chunks=False
-        )
+        zip_bytes: bytes = _build_zip(manifest, include_chunks=False)
 
-        result: ParseResult = parseResultZip(
-            zip_bytes, verify_checksum=False
-        )
+        result: ParseResult = parseResultZip(zip_bytes, verify_checksum=False)
         assert result.chunks == []
 
 
@@ -782,6 +814,8 @@ class TestRealResultZip:
 
     # -- Raw ZIP --
 
-    def test_raw_zip_is_preserved(self, real_zip_bytes: bytes, parsed_real_result: ParseResult) -> None:
+    def test_raw_zip_is_preserved(
+        self, real_zip_bytes: bytes, parsed_real_result: ParseResult
+    ) -> None:
         assert parsed_real_result.raw_zip is not None
         assert parsed_real_result.raw_zip == real_zip_bytes

@@ -37,11 +37,13 @@ T = TypeVar("T")
 _logger = getLogger()
 
 # Error codes that are always safe to retry (matches server ALWAYS_RETRYABLE_ERROR_CODES)
-_ALWAYS_RETRYABLE_ERROR_CODES: frozenset[str] = frozenset({
-    "ABORTED",            # 409 - Concurrency conflict
-    "UNAVAILABLE",        # 503 - Service temporarily down
-    "DEADLINE_EXCEEDED",  # 504 - Timeout
-})
+_ALWAYS_RETRYABLE_ERROR_CODES: frozenset[str] = frozenset(
+    {
+        "ABORTED",  # 409 - Concurrency conflict
+        "UNAVAILABLE",  # 503 - Service temporarily down
+        "DEADLINE_EXCEEDED",  # 504 - Timeout
+    }
+)
 
 # RESOURCE_EXHAUSTED (429) is conditionally retryable:
 #   - Rate limit: details.retry_after present → RETRY
@@ -83,18 +85,12 @@ class BaseClient:
                 f"or the {ENV_API_KEY} environment variable."
             )
         self.api_key = resolved_key
-        self.base_url = (
-            base_url
-            or os.environ.get(ENV_BASE_URL)
-            or DEFAULT_BASE_URL
-        ).rstrip("/")
+        self.base_url = (base_url or os.environ.get(ENV_BASE_URL) or DEFAULT_BASE_URL).rstrip("/")
         self.timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
         self.upload_timeout = (
             upload_timeout if upload_timeout is not None else DEFAULT_UPLOAD_TIMEOUT
         )
-        self.max_retries = (
-            max_retries if max_retries is not None else DEFAULT_MAX_RETRIES
-        )
+        self.max_retries = max_retries if max_retries is not None else DEFAULT_MAX_RETRIES
         self._default_headers = default_headers or {}
 
     def _buildHeaders(self) -> Dict[str, str]:
@@ -112,13 +108,11 @@ class BaseClient:
         if path.startswith("http://") or path.startswith("https://"):
             return path
         clean_path: str = path.lstrip("/")
-        if not clean_path.startswith(API_VERSION):
+        if not clean_path.startswith("v2/"):
             clean_path = f"{API_VERSION}/{clean_path}"
         return f"{self.base_url}/{clean_path}"
 
-    def _parseErrorResponse(
-        self, response: httpx.Response
-    ) -> Optional[Dict[str, Any]]:
+    def _parseErrorResponse(self, response: httpx.Response) -> Optional[Dict[str, Any]]:
         """Try to parse a JSON error body; return ``None`` on failure."""
         try:
             return response.json()  # type: ignore[no-any-return]
@@ -201,7 +195,7 @@ class BaseClient:
         if retry_after is not None and retry_after > 0:
             return retry_after
         # Exponential backoff: 0.5 * 2^attempt, capped at 30s
-        base_delay: float = min(0.5 * (2 ** attempt), 30.0)
+        base_delay: float = min(0.5 * (2**attempt), 30.0)
         jitter: float = random.uniform(0, base_delay * 0.25)
         return base_delay + jitter
 
@@ -304,21 +298,15 @@ class SyncAPIClient(BaseClient):
                     continue
                 raise APIConnectionError(str(exc)) from exc
 
-            _logger.debug(
-                "Response: %d %s", response.status_code, url
-            )
+            _logger.debug("Response: %d %s", response.status_code, url)
 
             # Success
             if response.is_success:
-                api_response: APIResponse[T] = APIResponse(
-                    response, cast_to
-                )
+                api_response: APIResponse[T] = APIResponse(response, cast_to)
                 return api_response.parse()
 
             # Error — decide whether to retry
-            error_body: Optional[Dict[str, Any]] = self._parseErrorResponse(
-                response
-            )
+            error_body: Optional[Dict[str, Any]] = self._parseErrorResponse(response)
             error_code: Optional[str] = None
             error_details: Optional[Dict[str, Any]] = None
             if isinstance(error_body, dict):
@@ -329,15 +317,10 @@ class SyncAPIClient(BaseClient):
                     if isinstance(raw_details, dict):
                         error_details = raw_details
 
-            if (
-                attempt < self.max_retries
-                and self._shouldRetry(
-                    response.status_code, error_code, error_details
-                )
+            if attempt < self.max_retries and self._shouldRetry(
+                response.status_code, error_code, error_details
             ):
-                retry_after_val: Optional[float] = self._extractRetryAfter(
-                    error_body, response
-                )
+                retry_after_val: Optional[float] = self._extractRetryAfter(error_body, response)
                 delay = self._calculateRetryDelay(attempt, retry_after_val)
                 _logger.warning(
                     "Retryable error %d on attempt %d/%d, retrying in %.1fs",
@@ -441,7 +424,9 @@ class AsyncAPIClient(BaseClient):
                     delay: float = self._calculateRetryDelay(attempt)
                     _logger.warning(
                         "Timeout on attempt %d/%d, retrying in %.1fs",
-                        attempt + 1, self.max_retries + 1, delay,
+                        attempt + 1,
+                        self.max_retries + 1,
+                        delay,
                     )
                     await asyncio.sleep(delay)
                     continue
@@ -453,7 +438,9 @@ class AsyncAPIClient(BaseClient):
                     delay = self._calculateRetryDelay(attempt)
                     _logger.warning(
                         "Connection error on attempt %d/%d, retrying in %.1fs",
-                        attempt + 1, self.max_retries + 1, delay,
+                        attempt + 1,
+                        self.max_retries + 1,
+                        delay,
                     )
                     await asyncio.sleep(delay)
                     continue
@@ -476,19 +463,17 @@ class AsyncAPIClient(BaseClient):
                     if isinstance(raw_details, dict):
                         error_details = raw_details
 
-            if (
-                attempt < self.max_retries
-                and self._shouldRetry(
-                    response.status_code, error_code, error_details
-                )
+            if attempt < self.max_retries and self._shouldRetry(
+                response.status_code, error_code, error_details
             ):
-                retry_after_val: Optional[float] = self._extractRetryAfter(
-                    error_body, response
-                )
+                retry_after_val: Optional[float] = self._extractRetryAfter(error_body, response)
                 delay = self._calculateRetryDelay(attempt, retry_after_val)
                 _logger.warning(
                     "Retryable error %d on attempt %d/%d, retrying in %.1fs",
-                    response.status_code, attempt + 1, self.max_retries + 1, delay,
+                    response.status_code,
+                    attempt + 1,
+                    self.max_retries + 1,
+                    delay,
                 )
                 await asyncio.sleep(delay)
                 continue

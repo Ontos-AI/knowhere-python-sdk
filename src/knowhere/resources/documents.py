@@ -15,7 +15,7 @@ from knowhere.types.document import (
 
 
 class Documents(SyncAPIResource):
-    """Synchronous interface for ``/v1/documents`` endpoints."""
+    """Synchronous interface for ``/v2/documents`` endpoints."""
 
     def list(
         self,
@@ -33,7 +33,7 @@ class Documents(SyncAPIResource):
 
         return self._request(
             "GET",
-            "v1/documents",
+            self._versionedPath("documents"),
             params=params or None,
             cast_to=DocumentListResponse,
         )
@@ -42,7 +42,7 @@ class Documents(SyncAPIResource):
         """Get one canonical document by ID."""
         return self._request(
             "GET",
-            f"v1/documents/{document_id}",
+            self._versionedPath(f"documents/{document_id}"),
             cast_to=Document,
         )
 
@@ -65,7 +65,7 @@ class Documents(SyncAPIResource):
 
         return self._request(
             "GET",
-            f"v1/documents/{document_id}/chunks",
+            self._versionedPath(f"documents/{document_id}/chunks"),
             params=params or None,
             cast_to=DocumentChunkListResponse,
         )
@@ -84,7 +84,7 @@ class Documents(SyncAPIResource):
 
         return self._request(
             "GET",
-            f"v1/documents/{document_id}/chunks/{document_chunk_id}",
+            self._versionedPath(f"documents/{document_id}/chunks/{document_chunk_id}"),
             params=params or None,
             cast_to=DocumentChunkResponse,
         )
@@ -93,13 +93,13 @@ class Documents(SyncAPIResource):
         """Archive one canonical document by ID."""
         return self._request(
             "POST",
-            f"v1/documents/{document_id}/archive",
+            self._versionedPath(f"documents/{document_id}/archive"),
             cast_to=Document,
         )
 
 
 class AsyncDocuments(AsyncAPIResource):
-    """Asynchronous interface for ``/v1/documents`` endpoints."""
+    """Asynchronous interface for ``/v2/documents`` endpoints."""
 
     async def list(
         self,
@@ -117,7 +117,7 @@ class AsyncDocuments(AsyncAPIResource):
 
         return await self._request(
             "GET",
-            "v1/documents",
+            self._versionedPath("documents"),
             params=params or None,
             cast_to=DocumentListResponse,
         )
@@ -126,7 +126,7 @@ class AsyncDocuments(AsyncAPIResource):
         """Get one canonical document by ID."""
         return await self._request(
             "GET",
-            f"v1/documents/{document_id}",
+            self._versionedPath(f"documents/{document_id}"),
             cast_to=Document,
         )
 
@@ -149,7 +149,7 @@ class AsyncDocuments(AsyncAPIResource):
 
         return await self._request(
             "GET",
-            f"v1/documents/{document_id}/chunks",
+            self._versionedPath(f"documents/{document_id}/chunks"),
             params=params or None,
             cast_to=DocumentChunkListResponse,
         )
@@ -168,7 +168,7 @@ class AsyncDocuments(AsyncAPIResource):
 
         return await self._request(
             "GET",
-            f"v1/documents/{document_id}/chunks/{document_chunk_id}",
+            self._versionedPath(f"documents/{document_id}/chunks/{document_chunk_id}"),
             params=params or None,
             cast_to=DocumentChunkResponse,
         )
@@ -177,7 +177,7 @@ class AsyncDocuments(AsyncAPIResource):
         """Archive one canonical document by ID."""
         return await self._request(
             "POST",
-            f"v1/documents/{document_id}/archive",
+            self._versionedPath(f"documents/{document_id}/archive"),
             cast_to=Document,
         )
 

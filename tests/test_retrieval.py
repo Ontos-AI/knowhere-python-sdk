@@ -12,7 +12,7 @@ import respx
 from tests.conftest import BASE_URL
 
 
-RETRIEVAL_QUERY_URL: str = f"{BASE_URL}/v1/retrieval/query"
+RETRIEVAL_QUERY_URL: str = f"{BASE_URL}/v2/retrieval/query"
 
 
 def _make_retrieval_response() -> Dict[str, Any]:
@@ -26,7 +26,12 @@ def _make_retrieval_response() -> Dict[str, Any]:
         "failure_reason": "insufficient evidence",
         "decision_trace": [
             {"phase": "discovery", "action": "select_documents", "selected": ["doc_123"]},
-            {"phase": "terminal", "action": "complete", "stop_reason": "answer_done", "failure_reason": "insufficient evidence"},
+            {
+                "phase": "terminal",
+                "action": "complete",
+                "stop_reason": "answer_done",
+                "failure_reason": "insufficient evidence",
+            },
         ],
         "referenced_chunks": [
             {
@@ -41,7 +46,9 @@ def _make_retrieval_response() -> Dict[str, Any]:
         ],
         "results": [
             {
+                "chunk_id": "chunk_001",
                 "chunk_type": "text",
+                "content_source": "content",
                 "content": "Annual plans may be refunded within 30 days.",
                 "score": 1.0,
                 "source": {
@@ -135,9 +142,7 @@ class TestRetrievalQuery:
         assert response.results[0].source.document_id == "doc_123"
         assert response.results[0].source.source_file_name == "refund-policy.md"
         assert response.results[0].source.section_path == "Policies / Billing / Refunds"
-        assert response.answer_text == (
-            "Annual plans may be refunded within 30 days of purchase."
-        )
+        assert response.answer_text == ("Annual plans may be refunded within 30 days of purchase.")
         assert len(response.referenced_chunks) == 1
         assert response.evidence_text == "Rendered retrieval evidence"
         assert response.stop_reason == "answer_done"
@@ -146,8 +151,33 @@ class TestRetrievalQuery:
         assert response.referenced_chunks[0].chunk_type == "text"
         assert response.referenced_chunks[0].file_path is None
         assert not hasattr(response.results[0], "citation")
-        assert not hasattr(response.results[0], "chunk_id")
+        assert response.results[0].chunk_id == "chunk_001"
+        assert response.results[0].content_source == "content"
         assert not hasattr(response.results[0], "section_id")
+
+    @respx.mock
+    def test_query_sends_chunk_types(
+        self,
+        sync_client: Any,
+    ) -> None:
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+            return_value=httpx.Response(200, json=_make_retrieval_response())
+        )
+
+        response = sync_client.retrieval.query(
+            query="refund policy",
+            chunk_types=["page"],
+            data_type=7,
+        )
+
+        assert route.called
+        request_body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert request_body == {
+            "query": "refund policy",
+            "data_type": 7,
+            "chunk_types": ["page"],
+        }
+        assert response.results[0].chunk_id == "chunk_001"
 
     @respx.mock
     def test_query_omits_defaulted_optional_fields(self, sync_client: Any) -> None:
@@ -216,9 +246,7 @@ class TestRetrievalQuery:
             use_agentic=True,
         )
 
-        assert response.answer_text == (
-            "Annual plans may be refunded within 30 days of purchase."
-        )
+        assert response.answer_text == ("Annual plans may be refunded within 30 days of purchase.")
         assert len(response.referenced_chunks) == 1
         assert response.referenced_chunks[0].chunk_id == "chunk_001"
         assert response.referenced_chunks[0].document_id == "doc_123"
@@ -226,9 +254,7 @@ class TestRetrievalQuery:
         assert response.referenced_chunks[0].section_path == "Policies / Billing / Refunds"
         assert response.referenced_chunks[0].file_path is None
         assert response.referenced_chunks[0].job_id == "job_123"
-        assert response.referenced_chunks[0].asset_url == (
-            "https://example.com/assets/chunk_001"
-        )
+        assert response.referenced_chunks[0].asset_url == ("https://example.com/assets/chunk_001")
         assert response.evidence_text == "Rendered retrieval evidence"
         assert response.stop_reason == "answer_done"
         assert response.failure_reason == "insufficient evidence"
@@ -241,9 +267,7 @@ class TestRetrievalQuery:
     def test_legacy_response_without_agentic_fields(self, sync_client: Any) -> None:
         """Legacy-mode response defaults agentic fields to null and empty references."""
         respx.post(RETRIEVAL_QUERY_URL).mock(
-            return_value=httpx.Response(
-                200, json=_make_legacy_retrieval_response()
-            )
+            return_value=httpx.Response(200, json=_make_legacy_retrieval_response())
         )
 
         response = sync_client.retrieval.query(query="refund policy")

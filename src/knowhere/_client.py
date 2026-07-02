@@ -153,7 +153,10 @@ class Knowhere(SyncAPIClient):
         )
 
         # Load and return parsed result
-        return self.jobs.load(job_result, verify_checksum=verify_checksum)
+        return self.jobs.load(
+            job_result,
+            verify_checksum=verify_checksum,
+        )
 
 
 class AsyncKnowhere(AsyncAPIClient):
@@ -273,5 +276,6 @@ class AsyncKnowhere(AsyncAPIClient):
         )
 
         return await self.jobs.load(
-            job_result, verify_checksum=verify_checksum
+            job_result,
+            verify_checksum=verify_checksum,
         )
