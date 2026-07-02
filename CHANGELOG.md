@@ -1,20 +1,5 @@
 # Changelog
 
-## [2.0.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.6.0...v2.0.0) (2026-07-01)
-
-
-### Breaking Changes
-
-* move the SDK to the v2 page-memory API as the only parse/API flow
-
-### Features
-
-* add page chunk, content source, and retrieval chunk type support
-
-### Refactors
-
-* remove public v1 API-version switching while retaining legacy parsed-result chunk inspection
-
 ## [0.6.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.5.1...v0.6.0) (2026-06-30)
 
 
