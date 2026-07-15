@@ -172,21 +172,18 @@ print(result.document_id)                # Published canonical document id
 
 Pass OpenAI-compatible credentials for parsing or agentic retrieval.
 
-Use `provider` for a single multimodal model (both channels). Use `text` /
-`vision` to override one channel only; missing channels without `provider`
-keep server defaults:
+Flat root applies to both channels (one multimodal model). Use `text` / `vision`
+when channels need different provider endpoints:
 
 ```python
 # Multimodal shorthand — one model for text + vision
 llm_config = {
-    "provider": {
-        "api_key": "sk-...",
-        "model": "gpt-4o",
-        "base_url": "https://api.openai.com/v1",
-    },
+    "api_key": "sk-...",
+    "model": "gpt-4o",
+    "base_url": "https://api.openai.com/v1",
 }
 
-# Or split providers per channel
+# Or two different endpoints
 llm_config = {
     "text": {
         "api_key": "sk-...",
@@ -194,9 +191,9 @@ llm_config = {
         "base_url": "https://api.openai.com/v1",
     },
     "vision": {
-        "api_key": "sk-...",
-        "model": "gpt-4o",
-        "base_url": "https://api.openai.com/v1",
+        "api_key": "sk-ali-...",
+        "model": "qwen-vl-max",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     },
 }
 

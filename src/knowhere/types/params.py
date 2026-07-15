@@ -30,17 +30,14 @@ class LLMProviderConfig(TypedDict, total=False):
 class LLMConfig(TypedDict, total=False):
     """Bring-your-own-key LLM credentials.
 
-    At least one of ``provider``, ``text``, or ``vision`` should be set when
-    ``llm_config`` is present.
-
-    - ``provider``: shared multimodal credentials for both channels
-    - ``text`` / ``vision``: per-channel overrides (win over ``provider``)
-    - a channel with neither a slot nor ``provider`` keeps server defaults
-
-    Providers must be OpenAI-compatible.
+    Flat root (``api_key`` / ``model`` / ``base_url``) applies to both channels.
+    Optional ``text`` / ``vision`` fully replace the default for that channel —
+    use both when text and vision use different provider endpoints.
     """
 
-    provider: LLMProviderConfig
+    api_key: str
+    model: str
+    base_url: str
     text: LLMProviderConfig
     vision: LLMProviderConfig
 
