@@ -170,11 +170,23 @@ print(result.document_id)                # Published canonical document id
 
 ### Bring your own LLM keys (BYOK)
 
-Pass OpenAI-compatible credentials for parsing or agentic retrieval. Each of
-`text` / `vision` overrides only its own channel; missing slots keep server
-defaults. For one multimodal model, set both slots to the same credentials:
+Pass OpenAI-compatible credentials for parsing or agentic retrieval.
+
+Use `provider` for a single multimodal model (both channels). Use `text` /
+`vision` to override one channel only; missing channels without `provider`
+keep server defaults:
 
 ```python
+# Multimodal shorthand — one model for text + vision
+llm_config = {
+    "provider": {
+        "api_key": "sk-...",
+        "model": "gpt-4o",
+        "base_url": "https://api.openai.com/v1",
+    },
+}
+
+# Or split providers per channel
 llm_config = {
     "text": {
         "api_key": "sk-...",

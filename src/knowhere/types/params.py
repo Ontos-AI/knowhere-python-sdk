@@ -30,12 +30,17 @@ class LLMProviderConfig(TypedDict, total=False):
 class LLMConfig(TypedDict, total=False):
     """Bring-your-own-key LLM credentials.
 
-    At least one of ``text`` or ``vision`` should be set when ``llm_config``
-    is present. Each slot overrides only its own channel; missing slots keep
-    server defaults. For one multimodal model, set both slots to the same
-    credentials. Providers must be OpenAI-compatible.
+    At least one of ``provider``, ``text``, or ``vision`` should be set when
+    ``llm_config`` is present.
+
+    - ``provider``: shared multimodal credentials for both channels
+    - ``text`` / ``vision``: per-channel overrides (win over ``provider``)
+    - a channel with neither a slot nor ``provider`` keeps server defaults
+
+    Providers must be OpenAI-compatible.
     """
 
+    provider: LLMProviderConfig
     text: LLMProviderConfig
     vision: LLMProviderConfig
 
