@@ -31,7 +31,9 @@ class LLMConfig(TypedDict, total=False):
     """Bring-your-own-key LLM credentials.
 
     At least one of ``text`` or ``vision`` should be set when ``llm_config``
-    is present. Providers must be OpenAI-compatible.
+    is present. Each slot overrides only its own channel; missing slots keep
+    server defaults. For one multimodal model, set both slots to the same
+    credentials. Providers must be OpenAI-compatible.
     """
 
     text: LLMProviderConfig

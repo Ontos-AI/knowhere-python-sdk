@@ -201,7 +201,9 @@ result = client.parse(
 ### Bring your own LLM keys (BYOK)
 
 Pass OpenAI-compatible credentials via `llm_config` on `parse()`, `jobs.create()`,
-or `retrieval.query()`. Provide at least one of `text` or `vision`:
+or `retrieval.query()`. Each of `text` / `vision` overrides only its own channel;
+missing slots keep server defaults. For one multimodal model, set both slots to
+the same credentials:
 
 ```python
 result = client.parse(

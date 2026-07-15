@@ -170,7 +170,9 @@ print(result.document_id)                # Published canonical document id
 
 ### Bring your own LLM keys (BYOK)
 
-Pass OpenAI-compatible credentials for parsing or agentic retrieval:
+Pass OpenAI-compatible credentials for parsing or agentic retrieval. Each of
+`text` / `vision` overrides only its own channel; missing slots keep server
+defaults. For one multimodal model, set both slots to the same credentials:
 
 ```python
 llm_config = {
