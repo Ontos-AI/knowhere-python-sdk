@@ -19,7 +19,7 @@ from knowhere.lib.result_parser import parseResultZip
 from knowhere.lib.upload import asyncUploadFile, syncUploadFile
 from knowhere.resources._base import AsyncAPIResource, SyncAPIResource
 from knowhere.types.job import Job, JobResult
-from knowhere.types.params import ParsingParams, WebhookConfig
+from knowhere.types.params import LLMConfig, ParsingParams, WebhookConfig
 from knowhere.types.result import ParseResult
 
 _logger = getLogger()
@@ -39,6 +39,7 @@ class Jobs(SyncAPIResource):
         data_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
+        llm_config: Optional[LLMConfig] = None,
     ) -> Job:
         """Create a new parsing job.
 
@@ -51,6 +52,7 @@ class Jobs(SyncAPIResource):
             data_id: Optional idempotency / correlation identifier.
             parsing_params: Optional parsing configuration.
             webhook: Optional webhook configuration.
+            llm_config: Optional BYOK LLM credentials (OpenAI-compatible).
 
         Returns:
             A ``Job`` object with upload details if ``source_type="file"``.
@@ -70,6 +72,8 @@ class Jobs(SyncAPIResource):
             body["parsing_params"] = dict(parsing_params)
         if webhook is not None:
             body["webhook"] = dict(webhook)
+        if llm_config is not None:
+            body["llm_config"] = dict(llm_config)
 
         return self._request(
             "POST",
@@ -195,6 +199,7 @@ class AsyncJobs(AsyncAPIResource):
         data_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
+        llm_config: Optional[LLMConfig] = None,
     ) -> Job:
         """Create a new parsing job (async)."""
         body: Dict[str, Any] = {"source_type": source_type}
@@ -212,6 +217,8 @@ class AsyncJobs(AsyncAPIResource):
             body["parsing_params"] = dict(parsing_params)
         if webhook is not None:
             body["webhook"] = dict(webhook)
+        if llm_config is not None:
+            body["llm_config"] = dict(llm_config)
 
         return await self._request(
             "POST",

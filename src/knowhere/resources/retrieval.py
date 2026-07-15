@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from knowhere.resources._base import AsyncAPIResource, SyncAPIResource
+from knowhere.types.params import LLMConfig
 from knowhere.types.retrieval import (
     RetrievalChunkType,
     RetrievalChannel,
@@ -35,6 +36,7 @@ class Retrieval(SyncAPIResource):
         internal_recall_k: Optional[int] = None,
         exclude_document_ids: Optional[list[str]] = None,
         exclude_sections: Optional[list[RetrievalSectionExclusion]] = None,
+        llm_config: Optional[LLMConfig] = None,
     ) -> RetrievalQueryResponse:
         """Query published documents in a namespace."""
         body: Dict[str, Any] = {"query": query}
@@ -66,6 +68,8 @@ class Retrieval(SyncAPIResource):
             body["exclude_document_ids"] = exclude_document_ids
         if exclude_sections is not None:
             body["exclude_sections"] = exclude_sections
+        if llm_config is not None:
+            body["llm_config"] = dict(llm_config)
 
         return self._request(
             "POST",
@@ -96,6 +100,7 @@ class AsyncRetrieval(AsyncAPIResource):
         internal_recall_k: Optional[int] = None,
         exclude_document_ids: Optional[list[str]] = None,
         exclude_sections: Optional[list[RetrievalSectionExclusion]] = None,
+        llm_config: Optional[LLMConfig] = None,
     ) -> RetrievalQueryResponse:
         """Query published documents in a namespace."""
         body: Dict[str, Any] = {"query": query}
@@ -127,6 +132,8 @@ class AsyncRetrieval(AsyncAPIResource):
             body["exclude_document_ids"] = exclude_document_ids
         if exclude_sections is not None:
             body["exclude_sections"] = exclude_sections
+        if llm_config is not None:
+            body["llm_config"] = dict(llm_config)
 
         return await self._request(
             "POST",

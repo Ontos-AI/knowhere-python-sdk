@@ -103,6 +103,75 @@ class TestJobsCreate:
         assert body["namespace"] == "support-center"
         assert body["document_id"] == "doc_123"
 
+    @respx.mock
+    def test_create_sends_llm_config(
+        self,
+        sync_client: Any,
+    ) -> None:
+        """POST body includes nested llm_config when provided."""
+        response_body: Dict[str, Any] = {
+            "job_id": "job_llm_config",
+            "status": "pending",
+            "source_type": "url",
+        }
+
+        route = respx.post(JOBS_URL).mock(return_value=httpx.Response(200, json=response_body))
+
+        sync_client.jobs.create(
+            source_type="url",
+            source_url="https://example.com/doc.pdf",
+            llm_config={
+                "text": {
+                    "api_key": "sk-text",
+                    "model": "gpt-4o-mini",
+                    "base_url": "https://api.openai.com/v1",
+                },
+                "vision": {
+                    "api_key": "sk-vision",
+                    "model": "gpt-4o",
+                    "base_url": "https://api.openai.com/v1",
+                },
+            },
+        )
+
+        assert route.called
+        body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert body["llm_config"] == {
+            "text": {
+                "api_key": "sk-text",
+                "model": "gpt-4o-mini",
+                "base_url": "https://api.openai.com/v1",
+            },
+            "vision": {
+                "api_key": "sk-vision",
+                "model": "gpt-4o",
+                "base_url": "https://api.openai.com/v1",
+            },
+        }
+
+    @respx.mock
+    def test_create_omits_llm_config_when_none(
+        self,
+        sync_client: Any,
+    ) -> None:
+        """llm_config is omitted from the POST body when not set."""
+        response_body: Dict[str, Any] = {
+            "job_id": "job_no_llm",
+            "status": "pending",
+            "source_type": "url",
+        }
+
+        route = respx.post(JOBS_URL).mock(return_value=httpx.Response(200, json=response_body))
+
+        sync_client.jobs.create(
+            source_type="url",
+            source_url="https://example.com/doc.pdf",
+        )
+
+        assert route.called
+        body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert "llm_config" not in body
+
 
 # ---------------------------------------------------------------------------
 # jobs.get()

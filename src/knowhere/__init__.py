@@ -46,7 +46,13 @@ from knowhere.types.document import (
     DocumentListResponse,
 )
 from knowhere.types.job import Job, JobError, JobProgress, JobResult
-from knowhere.types.params import ParsingParams, WebhookConfig
+from knowhere.types.params import (
+    LLMConfig,
+    LLMModelsConfig,
+    LLMProviderConfig,
+    ParsingParams,
+    WebhookConfig,
+)
 from knowhere.types.retrieval import (
     RetrievalChannel,
     RetrievalChunkType,
@@ -145,6 +151,9 @@ __all__: list[str] = [
     "TableChunk",
     "Chunk",
     # Param types
+    "LLMConfig",
+    "LLMModelsConfig",
+    "LLMProviderConfig",
     "ParsingParams",
     "WebhookConfig",
     # Callback types

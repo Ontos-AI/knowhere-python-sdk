@@ -168,6 +168,53 @@ print(result.namespace)                  # "default" or your explicit namespace
 print(result.document_id)                # Published canonical document id
 ```
 
+### Bring your own LLM keys (BYOK)
+
+Pass OpenAI-compatible credentials for parsing or agentic retrieval.
+
+Flat root applies to both channels (one multimodal model). Use `models` for
+different model ids on the same endpoint, or `text` / `vision` for different
+provider endpoints:
+
+```python
+# Multimodal shorthand — one model for text + vision
+llm_config = {
+    "api_key": "sk-...",
+    "model": "gpt-4o",
+    "base_url": "https://api.openai.com/v1",
+}
+
+# Same endpoint, different models per channel
+llm_config = {
+    "api_key": "sk-...",
+    "base_url": "https://api.openai.com/v1",
+    "models": {"text": "gpt-4o-mini", "vision": "gpt-4o"},
+}
+
+# Or two different endpoints
+llm_config = {
+    "text": {
+        "api_key": "sk-...",
+        "model": "gpt-4o-mini",
+        "base_url": "https://api.openai.com/v1",
+    },
+    "vision": {
+        "api_key": "sk-ali-...",
+        "model": "qwen-vl-max",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    },
+}
+
+result = client.parse(file=Path("report.pdf"), llm_config=llm_config)
+
+response = client.retrieval.query(
+    namespace="support-center",
+    query="refund policy",
+    use_agentic=True,
+    llm_config=llm_config,
+)
+```
+
 ### Access different chunk types
 
 ```python

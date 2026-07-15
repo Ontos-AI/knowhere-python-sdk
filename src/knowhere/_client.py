@@ -23,7 +23,7 @@ from knowhere.resources.documents import AsyncDocuments, Documents
 from knowhere.resources.jobs import AsyncJobs, Jobs
 from knowhere.resources.retrieval import AsyncRetrieval, Retrieval
 from knowhere.types.job import Job, JobResult
-from knowhere.types.params import ParsingParams, WebhookConfig
+from knowhere.types.params import LLMConfig, ParsingParams, WebhookConfig
 from knowhere.types.result import ParseResult
 
 _logger = getLogger()
@@ -66,6 +66,7 @@ class Knowhere(SyncAPIClient):
         document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
+        llm_config: Optional[LLMConfig] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -84,6 +85,7 @@ class Knowhere(SyncAPIClient):
         document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
+        llm_config: Optional[LLMConfig] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -102,6 +104,7 @@ class Knowhere(SyncAPIClient):
         document_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
+        llm_config: Optional[LLMConfig] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         poll_timeout: float = DEFAULT_POLL_TIMEOUT,
         verify_checksum: bool = True,
@@ -127,6 +130,7 @@ class Knowhere(SyncAPIClient):
                 document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
+                llm_config=llm_config,
             )
         else:
             resolved_name: Optional[str] = file_name
@@ -140,6 +144,7 @@ class Knowhere(SyncAPIClient):
                 document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
+                llm_config=llm_config,
             )
             assert file is not None
             self.jobs.upload(job, file, on_progress=on_upload_progress)
@@ -194,6 +199,7 @@ class AsyncKnowhere(AsyncAPIClient):
         document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
+        llm_config: Optional[LLMConfig] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -212,6 +218,7 @@ class AsyncKnowhere(AsyncAPIClient):
         document_id: Optional[str] = ...,
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
+        llm_config: Optional[LLMConfig] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -230,6 +237,7 @@ class AsyncKnowhere(AsyncAPIClient):
         document_id: Optional[str] = None,
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
+        llm_config: Optional[LLMConfig] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         poll_timeout: float = DEFAULT_POLL_TIMEOUT,
         verify_checksum: bool = True,
@@ -251,6 +259,7 @@ class AsyncKnowhere(AsyncAPIClient):
                 document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
+                llm_config=llm_config,
             )
         else:
             resolved_name: Optional[str] = file_name
@@ -264,6 +273,7 @@ class AsyncKnowhere(AsyncAPIClient):
                 document_id=document_id,
                 parsing_params=parsing_params,
                 webhook=webhook,
+                llm_config=llm_config,
             )
             assert file is not None
             await self.jobs.upload(job, file, on_progress=on_upload_progress)

@@ -180,6 +180,56 @@ class TestRetrievalQuery:
         assert response.results[0].chunk_id == "chunk_001"
 
     @respx.mock
+    def test_query_sends_llm_config(self, sync_client: Any) -> None:
+        """llm_config with nested text/vision is included in the POST body."""
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+            return_value=httpx.Response(200, json=_make_retrieval_response())
+        )
+
+        sync_client.retrieval.query(
+            query="refund policy",
+            llm_config={
+                "text": {
+                    "api_key": "sk-text",
+                    "model": "gpt-4o-mini",
+                    "base_url": "https://api.openai.com/v1",
+                },
+                "vision": {
+                    "api_key": "sk-vision",
+                    "model": "gpt-4o",
+                    "base_url": "https://api.openai.com/v1",
+                },
+            },
+        )
+
+        assert route.called
+        request_body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert request_body["llm_config"] == {
+            "text": {
+                "api_key": "sk-text",
+                "model": "gpt-4o-mini",
+                "base_url": "https://api.openai.com/v1",
+            },
+            "vision": {
+                "api_key": "sk-vision",
+                "model": "gpt-4o",
+                "base_url": "https://api.openai.com/v1",
+            },
+        }
+
+    @respx.mock
+    def test_query_omits_llm_config_when_none(self, sync_client: Any) -> None:
+        """llm_config is omitted from the POST body when not set."""
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+            return_value=httpx.Response(200, json=_make_retrieval_response())
+        )
+
+        sync_client.retrieval.query(query="refund policy")
+
+        request_body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert "llm_config" not in request_body
+
+    @respx.mock
     def test_query_omits_defaulted_optional_fields(self, sync_client: Any) -> None:
         route = respx.post(RETRIEVAL_QUERY_URL).mock(
             return_value=httpx.Response(200, json=_make_retrieval_response())
