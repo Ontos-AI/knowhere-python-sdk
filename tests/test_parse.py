@@ -101,6 +101,56 @@ class TestParseWithUrl:
         assert parse_result.namespace == "support-center"
         assert parse_result.document_id == "doc_123"
 
+    @respx.mock
+    def test_parse_url_forwards_llm_config(
+        self,
+        sync_client: Any,
+        sample_zip_bytes: bytes,
+    ) -> None:
+        """parse() threads llm_config into jobs.create POST body."""
+        import json
+
+        job_id: str = "job_llm_parse"
+        result_url: str = "https://storage.example.com/result.zip"
+        llm_config = {
+            "text": {
+                "api_key": "sk-text",
+                "model": "gpt-4o-mini",
+                "base_url": "https://api.openai.com/v1",
+            },
+        }
+
+        create_route = respx.post(JOBS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json=_make_create_response(job_id, "url"),
+            )
+        )
+        respx.get(f"{JOBS_URL}/{job_id}").mock(
+            return_value=httpx.Response(
+                200,
+                json=_make_done_response(job_id, result_url),
+            )
+        )
+        respx.get(result_url).mock(
+            return_value=httpx.Response(
+                200,
+                content=sample_zip_bytes,
+                headers={"Content-Type": "application/zip"},
+            )
+        )
+
+        sync_client.parse(
+            url="https://example.com/doc.pdf",
+            llm_config=llm_config,
+            poll_interval=0.01,
+            verify_checksum=False,
+        )
+
+        assert create_route.called
+        body: Dict[str, Any] = json.loads(create_route.calls[0].request.read())
+        assert body["llm_config"] == llm_config
+
 
 # ---------------------------------------------------------------------------
 # parse(file=Path(...))

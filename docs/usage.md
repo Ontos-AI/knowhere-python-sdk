@@ -144,6 +144,7 @@ result = client.parse(file=pdf_bytes, file_name="report.pdf")
 | `data_id` | `str \| None` | `None` | Your own correlation/idempotency identifier (max 128 chars). |
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration (see below). |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
+| `llm_config` | `LLMConfig \| None` | `None` | BYOK OpenAI-compatible credentials (`text` and/or `vision`). |
 | `poll_interval` | `float` | `10.0` | Initial polling interval in seconds. |
 | `poll_timeout` | `float` | `1800.0` | Maximum time to wait for completion (30 min). |
 | `verify_checksum` | `bool` | `True` | Verify SHA-256 checksum of the downloaded ZIP. |
@@ -193,6 +194,29 @@ result = client.parse(
         "summary_image": False,
         "summary_table": False,
         "summary_txt": False,
+    },
+)
+```
+
+### Bring your own LLM keys (BYOK)
+
+Pass OpenAI-compatible credentials via `llm_config` on `parse()`, `jobs.create()`,
+or `retrieval.query()`. Provide at least one of `text` or `vision`:
+
+```python
+result = client.parse(
+    file=Path("report.pdf"),
+    llm_config={
+        "text": {
+            "api_key": "sk-...",
+            "model": "gpt-4o-mini",
+            "base_url": "https://api.openai.com/v1",
+        },
+        "vision": {
+            "api_key": "sk-...",
+            "model": "gpt-4o",
+            "base_url": "https://api.openai.com/v1",
+        },
     },
 )
 ```
@@ -379,6 +403,7 @@ print(result.statistics)
 | `data_id` | `str \| None` | `None` | Your own correlation/idempotency identifier. |
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration. |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
+| `llm_config` | `LLMConfig \| None` | `None` | BYOK OpenAI-compatible credentials (`text` and/or `vision`). |
 
 Returns a `Job` object:
 
@@ -536,6 +561,7 @@ for result in response.results:
 | `use_agentic` | `bool \| None` | `None` | Force agentic (`True`) or legacy (`False`) retrieval. `None` uses server default. |
 | `chunk_types` | `list["text" \| "image" \| "table" \| "page"] \| None` | `None` | Restrict retrieval to the selected chunk types. |
 | `data_type` | `int \| None` | `None` | Deprecated server selector; `7` maps to page chunks and `8` maps to text+image+table. Prefer `chunk_types`. |
+| `llm_config` | `LLMConfig \| None` | `None` | BYOK OpenAI-compatible credentials for agentic retrieval (`text` and/or `vision`). |
 
 Retrieval results expose `content`, not the older parse-result `text` field.
 Media results may include `asset_url` when the server can sign the referenced

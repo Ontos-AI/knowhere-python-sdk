@@ -19,6 +19,25 @@ class ParsingParams(TypedDict, total=False):
     add_frag_desc: bool
 
 
+class LLMProviderConfig(TypedDict, total=False):
+    """OpenAI-compatible provider credentials for a single modality."""
+
+    api_key: str
+    model: str
+    base_url: str
+
+
+class LLMConfig(TypedDict, total=False):
+    """Bring-your-own-key LLM credentials.
+
+    At least one of ``text`` or ``vision`` should be set when ``llm_config``
+    is present. Providers must be OpenAI-compatible.
+    """
+
+    text: LLMProviderConfig
+    vision: LLMProviderConfig
+
+
 class WebhookConfig(TypedDict, total=False):
     """Webhook configuration for job completion notifications."""
 

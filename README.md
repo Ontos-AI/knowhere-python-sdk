@@ -168,6 +168,34 @@ print(result.namespace)                  # "default" or your explicit namespace
 print(result.document_id)                # Published canonical document id
 ```
 
+### Bring your own LLM keys (BYOK)
+
+Pass OpenAI-compatible credentials for parsing or agentic retrieval:
+
+```python
+llm_config = {
+    "text": {
+        "api_key": "sk-...",
+        "model": "gpt-4o-mini",
+        "base_url": "https://api.openai.com/v1",
+    },
+    "vision": {
+        "api_key": "sk-...",
+        "model": "gpt-4o",
+        "base_url": "https://api.openai.com/v1",
+    },
+}
+
+result = client.parse(file=Path("report.pdf"), llm_config=llm_config)
+
+response = client.retrieval.query(
+    namespace="support-center",
+    query="refund policy",
+    use_agentic=True,
+    llm_config=llm_config,
+)
+```
+
 ### Access different chunk types
 
 ```python
