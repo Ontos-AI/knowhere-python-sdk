@@ -172,8 +172,9 @@ print(result.document_id)                # Published canonical document id
 
 Pass OpenAI-compatible credentials for parsing or agentic retrieval.
 
-Flat root applies to both channels (one multimodal model). Use `text` / `vision`
-when channels need different provider endpoints:
+Flat root applies to both channels (one multimodal model). Use `models` for
+different model ids on the same endpoint, or `text` / `vision` for different
+provider endpoints:
 
 ```python
 # Multimodal shorthand — one model for text + vision
@@ -181,6 +182,13 @@ llm_config = {
     "api_key": "sk-...",
     "model": "gpt-4o",
     "base_url": "https://api.openai.com/v1",
+}
+
+# Same endpoint, different models per channel
+llm_config = {
+    "api_key": "sk-...",
+    "base_url": "https://api.openai.com/v1",
+    "models": {"text": "gpt-4o-mini", "vision": "gpt-4o"},
 }
 
 # Or two different endpoints

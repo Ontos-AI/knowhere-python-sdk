@@ -201,16 +201,17 @@ result = client.parse(
 ### Bring your own LLM keys (BYOK)
 
 Pass OpenAI-compatible credentials via `llm_config` on `parse()`, `jobs.create()`,
-or `retrieval.query()`. Flat root applies to both channels; use `text` / `vision`
-for different provider endpoints:
+or `retrieval.query()`. Flat root applies to both channels; use `models` for
+different model ids on the same endpoint, or `text` / `vision` for different
+provider endpoints:
 
 ```python
 result = client.parse(
     file=Path("report.pdf"),
     llm_config={
         "api_key": "sk-...",
-        "model": "gpt-4o",
         "base_url": "https://api.openai.com/v1",
+        "models": {"text": "gpt-4o-mini", "vision": "gpt-4o"},
     },
 )
 ```

@@ -13,7 +13,13 @@ from knowhere.types.document import (
     DocumentListResponse,
 )
 from knowhere.types.job import Job, JobError, JobResult
-from knowhere.types.params import LLMConfig, LLMProviderConfig, ParsingParams, WebhookConfig
+from knowhere.types.params import (
+    LLMConfig,
+    LLMModelsConfig,
+    LLMProviderConfig,
+    ParsingParams,
+    WebhookConfig,
+)
 from knowhere.types.retrieval import (
     RetrievalChannel,
     RetrievalChunkType,
@@ -69,6 +75,7 @@ __all__: list[str] = [
     "RetrievalResult",
     # params
     "LLMConfig",
+    "LLMModelsConfig",
     "LLMProviderConfig",
     "ParsingParams",
     "WebhookConfig",

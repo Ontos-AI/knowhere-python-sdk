@@ -27,17 +27,25 @@ class LLMProviderConfig(TypedDict, total=False):
     base_url: str
 
 
+class LLMModelsConfig(TypedDict, total=False):
+    """Per-channel model ids sharing root api_key / base_url."""
+
+    text: str
+    vision: str
+
+
 class LLMConfig(TypedDict, total=False):
     """Bring-your-own-key LLM credentials.
 
     Flat root (``api_key`` / ``model`` / ``base_url``) applies to both channels.
-    Optional ``text`` / ``vision`` fully replace the default for that channel —
-    use both when text and vision use different provider endpoints.
+    Use ``models`` for different model ids on the same endpoint, or ``text`` /
+    ``vision`` objects for different provider endpoints.
     """
 
     api_key: str
     model: str
     base_url: str
+    models: LLMModelsConfig
     text: LLMProviderConfig
     vision: LLMProviderConfig
 
