@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.0.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.6.0...v2.0.0) (2026-08-24)
+
+
+### Features
+
+* add llm_config.models per-channel model map ([756a737](https://github.com/Ontos-AI/knowhere-python-sdk/commit/756a7375ad85169a5e9fa16539419682529b7c61))
+* add llm_config.provider multimodal shorthand ([49b67cb](https://github.com/Ontos-AI/knowhere-python-sdk/commit/49b67cbaec7e4f32f10433ded34c2cd7c8c311e1))
+* support llm_config BYOK on jobs and retrieval ([51adb5a](https://github.com/Ontos-AI/knowhere-python-sdk/commit/51adb5a7802832d727a42a60ce344b17907ccaba))
+* support llm_config BYOK on jobs and retrieval ([fba428f](https://github.com/Ontos-AI/knowhere-python-sdk/commit/fba428fc78c7b0f2c0b39dbd1b9acf47b0fa810f))
+* sync HTTP types and auth with Node SDK 2.2.0 ([d4706a9](https://github.com/Ontos-AI/knowhere-python-sdk/commit/d4706a969a860c84175581de42499fef915ca45c))
+* sync HTTP types and auth with Node SDK 2.2.0 ([96c6498](https://github.com/Ontos-AI/knowhere-python-sdk/commit/96c649868904bef768a035c631803f6f304b615f))
+
+
+### Bug Fixes
+
+* keep python release on release-please path ([a5da15c](https://github.com/Ontos-AI/knowhere-python-sdk/commit/a5da15c4d2402ea1f8c74222e9c84b7e56542d27))
+* pin ruff to 0.15 so CI matches local lint ([006ad21](https://github.com/Ontos-AI/knowhere-python-sdk/commit/006ad216d59aa9c0a8b34a8875272ad7cfc3d7ca))
+
+
+### Documentation
+
+* clarify llm_config partial per-channel override ([cbef45d](https://github.com/Ontos-AI/knowhere-python-sdk/commit/cbef45d44cf4cdb23b493f90012e18d8dc7aff36))
+
+
+### Refactors
+
+* flatten llm_config to OpenAI-style root fields ([2c65f2f](https://github.com/Ontos-AI/knowhere-python-sdk/commit/2c65f2f125ce8284f7707cba1f36d84ed76c3a17))
+
 ## [0.6.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.5.1...v0.6.0) (2026-06-30)
 
 
