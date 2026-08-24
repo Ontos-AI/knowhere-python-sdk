@@ -28,16 +28,6 @@ from knowhere.types.params import (
     ParsingParams,
     WebhookConfig,
 )
-from knowhere.types.retrieval import (
-    RetrievalChannel,
-    RetrievalChunkType,
-    RetrievalFilterMode,
-    RetrievalReferencedChunk,
-    RetrievalSectionExclusion,
-    RetrievalSource,
-    RetrievalQueryResponse,
-    RetrievalResult,
-)
 from knowhere.types.result import (
     BaseChunk,
     Checksum,
@@ -56,6 +46,16 @@ from knowhere.types.result import (
     TableChunk,
     TableFileInfo,
     TextChunk,
+)
+from knowhere.types.retrieval import (
+    RetrievalChannel,
+    RetrievalChunkType,
+    RetrievalFilterMode,
+    RetrievalQueryResponse,
+    RetrievalReferencedChunk,
+    RetrievalResult,
+    RetrievalSectionExclusion,
+    RetrievalSource,
 )
 
 __all__: list[str] = [
