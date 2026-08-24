@@ -57,7 +57,7 @@ class TestJobModel:
         }
         job: Job = Job(**data)
         assert job.namespace == "support-center"
-        assert "document_id" not in job.model_dump()
+        assert job.document_id == "doc_123"
 
     def test_from_dict_with_upload(self) -> None:
         data: Dict[str, Any] = {

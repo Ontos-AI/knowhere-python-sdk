@@ -33,7 +33,11 @@ from knowhere._exceptions import (
     ServiceUnavailableError,
     ValidationError,
 )
-from knowhere._types import PollProgressCallback, UploadProgressCallback
+from knowhere._types import AuthTokenProvider, PollProgressCallback, UploadProgressCallback
+from knowhere.lib.document_metadata import (
+    PYTHON_SDK_DOCUMENT_METADATA_DEFAULTS,
+    merge_document_metadata_defaults,
+)
 from knowhere._version import __version__
 from knowhere.types.document import (
     Document,
@@ -44,14 +48,22 @@ from knowhere.types.document import (
     DocumentChunkType,
     DocumentListPagination,
     DocumentListResponse,
+    DocumentPageCitationSource,
 )
 from knowhere.types.job import Job, JobError, JobProgress, JobResult
 from knowhere.types.params import (
+    DocumentMetadata,
     LLMConfig,
     LLMModelsConfig,
     LLMProviderConfig,
     ParsingParams,
     WebhookConfig,
+)
+from knowhere.types.page_citation import (
+    PAGE_CITATION_ASSETS_METADATA_KEY,
+    PageCitationAsset,
+    PageCitationAssetContentType,
+    PageCitationAssetSource,
 )
 from knowhere.types.retrieval import (
     RetrievalChannel,
@@ -89,6 +101,8 @@ __all__: list[str] = [
     "AsyncKnowhere",
     # Version
     "__version__",
+    "PYTHON_SDK_DOCUMENT_METADATA_DEFAULTS",
+    "merge_document_metadata_defaults",
     # Exceptions
     "KnowhereError",
     "ValidationError",
@@ -123,6 +137,11 @@ __all__: list[str] = [
     "DocumentChunkType",
     "DocumentListPagination",
     "DocumentListResponse",
+    "DocumentPageCitationSource",
+    "PageCitationAsset",
+    "PageCitationAssetContentType",
+    "PageCitationAssetSource",
+    "PAGE_CITATION_ASSETS_METADATA_KEY",
     # Retrieval types
     "RetrievalChannel",
     "RetrievalChunkType",
@@ -151,6 +170,7 @@ __all__: list[str] = [
     "TableChunk",
     "Chunk",
     # Param types
+    "DocumentMetadata",
     "LLMConfig",
     "LLMModelsConfig",
     "LLMProviderConfig",
@@ -159,4 +179,5 @@ __all__: list[str] = [
     # Callback types
     "UploadProgressCallback",
     "PollProgressCallback",
+    "AuthTokenProvider",
 ]

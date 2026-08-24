@@ -11,6 +11,7 @@ from knowhere.types.document import (
     DocumentChunkResponse,
     DocumentChunkType,
     DocumentListResponse,
+    DocumentPageCitationSource,
 )
 
 
@@ -87,6 +88,14 @@ class Documents(SyncAPIResource):
             self._versionedPath(f"documents/{document_id}/chunks/{document_chunk_id}"),
             params=params or None,
             cast_to=DocumentChunkResponse,
+        )
+
+    def get_page_citation_source(self, document_id: str) -> DocumentPageCitationSource:
+        """Get a signed normalized source-file URL for citations and debugging."""
+        return self._request(
+            "GET",
+            self._versionedPath(f"documents/{document_id}/files/page-citation-source"),
+            cast_to=DocumentPageCitationSource,
         )
 
     def archive(self, document_id: str) -> Document:
@@ -171,6 +180,14 @@ class AsyncDocuments(AsyncAPIResource):
             self._versionedPath(f"documents/{document_id}/chunks/{document_chunk_id}"),
             params=params or None,
             cast_to=DocumentChunkResponse,
+        )
+
+    async def get_page_citation_source(self, document_id: str) -> DocumentPageCitationSource:
+        """Get a signed normalized source-file URL for citations and debugging."""
+        return await self._request(
+            "GET",
+            self._versionedPath(f"documents/{document_id}/files/page-citation-source"),
+            cast_to=DocumentPageCitationSource,
         )
 
     async def archive(self, document_id: str) -> Document:

@@ -6,6 +6,7 @@ and ``AsyncAPIClient`` (httpx.AsyncClient) with retry logic and error handling.
 
 from __future__ import annotations
 
+import inspect
 import os
 import random
 import time
@@ -30,6 +31,7 @@ from knowhere._exceptions import (
 )
 from knowhere._logging import getLogger, redactSensitiveHeaders
 from knowhere._response import APIResponse
+from knowhere._types import AuthTokenProvider
 from knowhere._version import __version__
 
 T = TypeVar("T")
@@ -60,7 +62,8 @@ _CONDITIONALLY_RETRYABLE_STATUS_CODE: int = 429
 class BaseClient:
     """Shared configuration and helper methods for sync/async clients."""
 
-    api_key: str
+    api_key: Optional[str]
+    _auth_token_provider: Optional[AuthTokenProvider]
     base_url: str
     timeout: float
     upload_timeout: float
@@ -71,20 +74,26 @@ class BaseClient:
         self,
         *,
         api_key: Optional[str] = None,
+        auth_token_provider: Optional[AuthTokenProvider] = None,
         base_url: Optional[str] = None,
         timeout: Optional[float] = None,
         upload_timeout: Optional[float] = None,
         max_retries: Optional[int] = None,
         default_headers: Optional[Dict[str, str]] = None,
     ) -> None:
-        # Resolve: arg > env > default
+        # Resolve: arg > env > default. A static api_key wins over the provider.
         resolved_key: Optional[str] = api_key or os.environ.get(ENV_API_KEY)
-        if not resolved_key:
+        if resolved_key:
+            self.api_key = resolved_key
+            self._auth_token_provider = None
+        elif auth_token_provider is not None:
+            self.api_key = None
+            self._auth_token_provider = auth_token_provider
+        else:
             raise ValidationError(
-                "An API key must be provided via the 'api_key' argument "
-                f"or the {ENV_API_KEY} environment variable."
+                "An API key must be provided via the 'api_key' argument, "
+                f"the {ENV_API_KEY} environment variable, or auth_token_provider."
             )
-        self.api_key = resolved_key
         self.base_url = (base_url or os.environ.get(ENV_BASE_URL) or DEFAULT_BASE_URL).rstrip("/")
         self.timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
         self.upload_timeout = (
@@ -93,10 +102,38 @@ class BaseClient:
         self.max_retries = max_retries if max_retries is not None else DEFAULT_MAX_RETRIES
         self._default_headers = default_headers or {}
 
-    def _buildHeaders(self) -> Dict[str, str]:
+    def _sync_auth_token(self) -> str:
+        """Resolve a bearer token for a synchronous request."""
+        if self.api_key:
+            return self.api_key
+        if self._auth_token_provider is None:
+            raise ValidationError("Authentication token provider is not configured.")
+        token = self._auth_token_provider()
+        if inspect.isawaitable(token):
+            raise ValidationError(
+                "Synchronous clients require a non-async auth_token_provider."
+            )
+        if not token:
+            raise ValidationError("Authentication token provider returned an empty token")
+        return str(token)
+
+    async def _async_auth_token(self) -> str:
+        """Resolve a bearer token for an asynchronous request."""
+        if self.api_key:
+            return self.api_key
+        if self._auth_token_provider is None:
+            raise ValidationError("Authentication token provider is not configured.")
+        token = self._auth_token_provider()
+        if inspect.isawaitable(token):
+            token = await token
+        if not token:
+            raise ValidationError("Authentication token provider returned an empty token")
+        return str(token)
+
+    def _buildHeaders(self, *, token: str) -> Dict[str, str]:
         """Return headers including auth and user-agent."""
         headers: Dict[str, str] = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {token}",
             "User-Agent": f"knowhere-python/{__version__}",
             "Accept": "application/json",
         }
@@ -214,6 +251,7 @@ class SyncAPIClient(BaseClient):
         self,
         *,
         api_key: Optional[str] = None,
+        auth_token_provider: Optional[AuthTokenProvider] = None,
         base_url: Optional[str] = None,
         timeout: Optional[float] = None,
         upload_timeout: Optional[float] = None,
@@ -222,6 +260,7 @@ class SyncAPIClient(BaseClient):
     ) -> None:
         super().__init__(
             api_key=api_key,
+            auth_token_provider=auth_token_provider,
             base_url=base_url,
             timeout=timeout,
             upload_timeout=upload_timeout,
@@ -248,20 +287,19 @@ class SyncAPIClient(BaseClient):
     ) -> T:
         """Execute an HTTP request with automatic retries and error handling."""
         url: str = self._buildRequestUrl(path)
-        request_headers: Dict[str, str] = self._buildHeaders()
-        if headers:
-            request_headers.update(headers)
-
         effective_timeout: float = timeout if timeout is not None else self.timeout
 
-        _logger.debug(
-            "Request: %s %s headers=%s",
-            method,
-            url,
-            redactSensitiveHeaders(request_headers),
-        )
-
         for attempt in range(self.max_retries + 1):
+            request_headers: Dict[str, str] = self._buildHeaders(token=self._sync_auth_token())
+            if headers:
+                request_headers.update(headers)
+
+            _logger.debug(
+                "Request: %s %s headers=%s",
+                method,
+                url,
+                redactSensitiveHeaders(request_headers),
+            )
             try:
                 response: httpx.Response = self._client.request(
                     method,
@@ -362,6 +400,7 @@ class AsyncAPIClient(BaseClient):
         self,
         *,
         api_key: Optional[str] = None,
+        auth_token_provider: Optional[AuthTokenProvider] = None,
         base_url: Optional[str] = None,
         timeout: Optional[float] = None,
         upload_timeout: Optional[float] = None,
@@ -370,6 +409,7 @@ class AsyncAPIClient(BaseClient):
     ) -> None:
         super().__init__(
             api_key=api_key,
+            auth_token_provider=auth_token_provider,
             base_url=base_url,
             timeout=timeout,
             upload_timeout=upload_timeout,
@@ -396,20 +436,21 @@ class AsyncAPIClient(BaseClient):
         import asyncio
 
         url: str = self._buildRequestUrl(path)
-        request_headers: Dict[str, str] = self._buildHeaders()
-        if headers:
-            request_headers.update(headers)
-
         effective_timeout: float = timeout if timeout is not None else self.timeout
 
-        _logger.debug(
-            "Async request: %s %s headers=%s",
-            method,
-            url,
-            redactSensitiveHeaders(request_headers),
-        )
-
         for attempt in range(self.max_retries + 1):
+            request_headers: Dict[str, str] = self._buildHeaders(
+                token=await self._async_auth_token()
+            )
+            if headers:
+                request_headers.update(headers)
+
+            _logger.debug(
+                "Async request: %s %s headers=%s",
+                method,
+                url,
+                redactSensitiveHeaders(request_headers),
+            )
             try:
                 response: httpx.Response = await self._client.request(
                     method,

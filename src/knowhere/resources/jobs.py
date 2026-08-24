@@ -14,15 +14,59 @@ from knowhere._types import (
     PollProgressCallback,
     UploadProgressCallback,
 )
+from knowhere.lib.document_metadata import (
+    PYTHON_SDK_DOCUMENT_METADATA_DEFAULTS,
+    merge_document_metadata_defaults,
+)
 from knowhere.lib.polling import asyncPoll, syncPoll
 from knowhere.lib.result_parser import parseResultZip
 from knowhere.lib.upload import asyncUploadFile, syncUploadFile
 from knowhere.resources._base import AsyncAPIResource, SyncAPIResource
 from knowhere.types.job import Job, JobResult
-from knowhere.types.params import LLMConfig, ParsingParams, WebhookConfig
+from knowhere.types.params import DocumentMetadata, LLMConfig, ParsingParams, WebhookConfig
 from knowhere.types.result import ParseResult
 
 _logger = getLogger()
+
+
+def _build_job_create_body(
+    *,
+    source_type: str,
+    source_url: Optional[str],
+    file_name: Optional[str],
+    namespace: Optional[str],
+    document_id: Optional[str],
+    data_id: Optional[str],
+    parsing_params: Optional[ParsingParams],
+    webhook: Optional[WebhookConfig],
+    llm_config: Optional[LLMConfig],
+    document_metadata: Optional[DocumentMetadata],
+) -> Dict[str, Any]:
+    """Build a ``POST /v2/jobs`` body, always attaching telemetry metadata."""
+    body: Dict[str, Any] = {
+        "source_type": source_type,
+        "document_metadata": merge_document_metadata_defaults(
+            PYTHON_SDK_DOCUMENT_METADATA_DEFAULTS,
+            document_metadata,
+        ),
+    }
+    if source_url is not None:
+        body["source_url"] = source_url
+    if file_name is not None:
+        body["file_name"] = file_name
+    if namespace is not None:
+        body["namespace"] = namespace
+    if document_id is not None:
+        body["document_id"] = document_id
+    if data_id is not None:
+        body["data_id"] = data_id
+    if parsing_params is not None:
+        body["parsing_params"] = dict(parsing_params)
+    if webhook is not None:
+        body["webhook"] = dict(webhook)
+    if llm_config is not None:
+        body["llm_config"] = dict(llm_config)
+    return body
 
 
 class Jobs(SyncAPIResource):
@@ -40,6 +84,7 @@ class Jobs(SyncAPIResource):
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
         llm_config: Optional[LLMConfig] = None,
+        document_metadata: Optional[DocumentMetadata] = None,
     ) -> Job:
         """Create a new parsing job.
 
@@ -53,32 +98,28 @@ class Jobs(SyncAPIResource):
             parsing_params: Optional parsing configuration.
             webhook: Optional webhook configuration.
             llm_config: Optional BYOK LLM credentials (OpenAI-compatible).
+            document_metadata: Display metadata copied onto the published
+                document. Official ``created_by_client`` / ``client_version``
+                defaults are filled when omitted; caller keys win.
 
         Returns:
             A ``Job`` object with upload details if ``source_type="file"``.
         """
-        body: Dict[str, Any] = {"source_type": source_type}
-        if source_url is not None:
-            body["source_url"] = source_url
-        if file_name is not None:
-            body["file_name"] = file_name
-        if namespace is not None:
-            body["namespace"] = namespace
-        if document_id is not None:
-            body["document_id"] = document_id
-        if data_id is not None:
-            body["data_id"] = data_id
-        if parsing_params is not None:
-            body["parsing_params"] = dict(parsing_params)
-        if webhook is not None:
-            body["webhook"] = dict(webhook)
-        if llm_config is not None:
-            body["llm_config"] = dict(llm_config)
-
         return self._request(
             "POST",
             self._versionedPath("jobs"),
-            body=body,
+            body=_build_job_create_body(
+                source_type=source_type,
+                source_url=source_url,
+                file_name=file_name,
+                namespace=namespace,
+                document_id=document_id,
+                data_id=data_id,
+                parsing_params=parsing_params,
+                webhook=webhook,
+                llm_config=llm_config,
+                document_metadata=document_metadata,
+            ),
             cast_to=Job,
         )
 
@@ -200,30 +241,24 @@ class AsyncJobs(AsyncAPIResource):
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
         llm_config: Optional[LLMConfig] = None,
+        document_metadata: Optional[DocumentMetadata] = None,
     ) -> Job:
         """Create a new parsing job (async)."""
-        body: Dict[str, Any] = {"source_type": source_type}
-        if source_url is not None:
-            body["source_url"] = source_url
-        if file_name is not None:
-            body["file_name"] = file_name
-        if namespace is not None:
-            body["namespace"] = namespace
-        if document_id is not None:
-            body["document_id"] = document_id
-        if data_id is not None:
-            body["data_id"] = data_id
-        if parsing_params is not None:
-            body["parsing_params"] = dict(parsing_params)
-        if webhook is not None:
-            body["webhook"] = dict(webhook)
-        if llm_config is not None:
-            body["llm_config"] = dict(llm_config)
-
         return await self._request(
             "POST",
             self._versionedPath("jobs"),
-            body=body,
+            body=_build_job_create_body(
+                source_type=source_type,
+                source_url=source_url,
+                file_name=file_name,
+                namespace=namespace,
+                document_id=document_id,
+                data_id=data_id,
+                parsing_params=parsing_params,
+                webhook=webhook,
+                llm_config=llm_config,
+                document_metadata=document_metadata,
+            ),
             cast_to=Job,
         )
 

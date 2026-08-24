@@ -42,7 +42,7 @@ uv add knowhere-python-sdk
 
 ## Authentication
 
-The SDK requires an API key. You can provide it in three ways (highest priority first):
+Provide a static API key or a short-lived token provider.
 
 1. Constructor argument:
 
@@ -74,6 +74,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 client = knowhere.Knowhere()
+```
+
+4. Short-lived bearer token. If `api_key` is also set (or `KNOWHERE_API_KEY` is present), the static key wins.
+
+```python
+client = knowhere.Knowhere(auth_token_provider=lambda: current_access_token())
 ```
 
 ## Quick Start
@@ -145,6 +151,7 @@ result = client.parse(file=pdf_bytes, file_name="report.pdf")
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration (see below). |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
 | `llm_config` | `LLMConfig \| None` | `None` | BYOK OpenAI-compatible credentials (flat root and/or `text` / `vision`). |
+| `document_metadata` | `dict \| None` | `None` | Display metadata copied onto the published document. Official `created_by_client` / `client_version` defaults are filled when omitted. |
 | `poll_interval` | `float` | `10.0` | Initial polling interval in seconds. |
 | `poll_timeout` | `float` | `1800.0` | Maximum time to wait for completion (30 min). |
 | `verify_checksum` | `bool` | `True` | Verify SHA-256 checksum of the downloaded ZIP. |
@@ -399,6 +406,7 @@ print(result.statistics)
 | `parsing_params` | `ParsingParams \| None` | `None` | Parsing configuration. |
 | `webhook` | `WebhookConfig \| None` | `None` | Webhook for completion notification. |
 | `llm_config` | `LLMConfig \| None` | `None` | BYOK OpenAI-compatible credentials (flat root and/or `text` / `vision`). |
+| `document_metadata` | `dict \| None` | `None` | Display metadata copied onto the published document. Official `created_by_client` / `client_version` defaults are filled when omitted. |
 
 Returns a `Job` object:
 
@@ -626,6 +634,9 @@ image_chunk = client.documents.get_chunk(
     include_asset_urls=True,
 )
 print(image_chunk.chunk.asset_url)
+
+source = client.documents.get_page_citation_source("doc_123")
+print(source.url, source.content_type)
 
 archived = client.documents.archive("doc_123")
 print(archived.status)  # "archived"

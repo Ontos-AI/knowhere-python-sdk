@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Any, Dict
+
 from typing_extensions import TypedDict
+
+DocumentMetadata = Dict[str, Any]
+"""Client-provided display metadata copied onto the published document."""
 
 
 class ParsingParams(TypedDict, total=False):
