@@ -21,6 +21,7 @@ def _make_document(status: str = "active") -> Dict[str, Any]:
         "status": status,
         "current_job_result_id": "result_123",
         "source_file_name": "refund-policy.md",
+        "document_metadata": {"created_by_client": "python-sdk", "title": "Refund policy"},
         "created_at": "2026-04-21T08:00:00Z",
         "updated_at": "2026-04-21T08:30:00Z",
         "archived_at": "2026-04-21T09:00:00Z" if status == "archived" else None,
@@ -137,6 +138,10 @@ class TestDocumentsResource:
         assert route.called
         assert document.document_id == "doc_123"
         assert document.status == "active"
+        assert document.document_metadata == {
+            "created_by_client": "python-sdk",
+            "title": "Refund policy",
+        }
 
     @respx.mock
     def test_list_chunks_sends_optional_query_params(self, sync_client: Any) -> None:
@@ -307,6 +312,95 @@ class TestDocumentsResource:
         assert document.document_id == "doc_123"
         assert document.status == "archived"
         assert document.archived_at is not None
+
+    @respx.mock
+    def test_get_page_citation_source_hits_canonical_route(self, sync_client: Any) -> None:
+        route = respx.get(f"{DOCUMENTS_URL}/doc_123/files/page-citation-source").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "document_id": "doc_123",
+                    "namespace": "support-center",
+                    "job_id": "job_123",
+                    "job_result_id": "jres_123",
+                    "variant": "normalized_pdf",
+                    "file_name": "report.pdf",
+                    "content_type": "application/pdf",
+                    "url": "https://assets.example/report.pdf",
+                    "expires_at": "2026-01-01T00:00:00Z",
+                },
+            )
+        )
+
+        source = sync_client.documents.get_page_citation_source("doc_123")
+
+        assert route.called
+        assert source.document_id == "doc_123"
+        assert source.job_result_id == "jres_123"
+        assert source.content_type == "application/pdf"
+        assert source.url == "https://assets.example/report.pdf"
+
+    @respx.mock
+    def test_get_page_citation_source_surfaces_not_found(self, sync_client: Any) -> None:
+        from knowhere._exceptions import NotFoundError
+
+        respx.get(f"{DOCUMENTS_URL}/doc-404/files/page-citation-source").mock(
+            return_value=httpx.Response(
+                404,
+                json={"error": {"code": "NOT_FOUND", "message": "not found"}},
+            )
+        )
+
+        with pytest.raises(NotFoundError):
+            sync_client.documents.get_page_citation_source("doc-404")
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_async_get_page_citation_source(
+        self,
+        async_client: Any,
+    ) -> None:
+        route = respx.get(f"{DOCUMENTS_URL}/doc_123/files/page-citation-source").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "document_id": "doc_123",
+                    "file_name": "report.pdf",
+                    "content_type": "application/pdf",
+                    "url": "https://assets.example/report.pdf",
+                },
+            )
+        )
+
+        source = await async_client.documents.get_page_citation_source("doc_123")
+
+        assert route.called
+        assert source.file_name == "report.pdf"
+
+    def test_page_citation_asset_round_trips_descriptor(self) -> None:
+        from knowhere.types.page_citation import (
+            PAGE_CITATION_ASSETS_METADATA_KEY,
+            PageCitationAsset,
+        )
+
+        payload = {
+            "page_num": 4,
+            "artifact_ref": "page_citation_assets/page-4.png",
+            "asset_url": "https://assets.example/page-4.png",
+            "content_type": "image/png",
+            "width": 1200,
+            "height": 1600,
+            "source": "knowhere-rendered-page-citation-source",
+        }
+        asset = PageCitationAsset.model_validate(payload)
+        assert asset.page_num == 4
+        assert asset.source == "knowhere-rendered-page-citation-source"
+        chunk_metadata = {PAGE_CITATION_ASSETS_METADATA_KEY: [asset.model_dump()]}
+        parsed = [
+            PageCitationAsset.model_validate(item)
+            for item in chunk_metadata[PAGE_CITATION_ASSETS_METADATA_KEY]
+        ]
+        assert parsed[0].artifact_ref == "page_citation_assets/page-4.png"
 
     @respx.mock
     @pytest.mark.asyncio

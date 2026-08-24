@@ -42,19 +42,20 @@ for page in result.page_chunks:
 ## Retrieval and document lifecycle
 
 New documents are published into a retrieval namespace. The server returns a
-stable `document_id` after the job is published. `client.jobs.create(...)`
-does not return a usable `document_id`; persist `job_result.document_id` if you
-need to update or archive the same document later.
+stable `document_id` on job create when it has a planned id, and on the
+completed `job_result` after publication.
 
 ```python
 job = client.jobs.create(
     source_type="url",
     source_url="https://example.com/manual.pdf",
     namespace="support-center",
+    document_metadata={"title": "Support manual"},
 )
 
+document_id = job.document_id
 job_result = client.jobs.wait(job.job_id)
-document_id = job_result.document_id
+document_id = document_id or job_result.document_id
 
 if document_id is None:
     raise RuntimeError("Expected document_id after successful publication.")
@@ -119,6 +120,11 @@ if chunks.chunks:
     print(chunk.chunk.content)
     print(chunk.chunk.metadata.get("page_nums"))  # Page citations.
     print(chunk.chunk.asset_url)  # Requested 7-day URL when available.
+    page_assets = chunk.chunk.metadata.get("pageAssets") or []
+    print(page_assets)
+
+source = client.documents.get_page_citation_source(document_id)
+print(source.url)
 
 client.documents.archive(document_id)
 ```
@@ -151,6 +157,12 @@ response = client.retrieval.query(
 ```
 
 While you can provide an `api_key` keyword argument, we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/) to add `KNOWHERE_API_KEY="sk_..."` to your `.env` file so that your API key is not stored in source control.
+
+Short-lived dashboard tokens can use `auth_token_provider` instead of a static key. If `api_key` is also set, the static key wins.
+
+```python
+client = knowhere.Knowhere(auth_token_provider=lambda: current_access_token())
+```
 
 ### Parse a local file
 

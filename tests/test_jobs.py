@@ -50,7 +50,7 @@ class TestJobsCreate:
         assert job.source_type == "url"
         assert job.status == "pending"
         assert job.namespace == "support-center"
-        assert not hasattr(job, "document_id")
+        assert job.document_id is None
 
     @respx.mock
     def test_create_with_file_source(
@@ -102,6 +102,8 @@ class TestJobsCreate:
         assert body["data_id"] == "my_data_id"
         assert body["namespace"] == "support-center"
         assert body["document_id"] == "doc_123"
+        assert body["document_metadata"]["created_by_client"] == "python-sdk"
+        assert "client_version" in body["document_metadata"]
 
     @respx.mock
     def test_create_sends_llm_config(
@@ -171,6 +173,67 @@ class TestJobsCreate:
         assert route.called
         body: Dict[str, Any] = json.loads(route.calls[0].request.read())
         assert "llm_config" not in body
+        assert body["document_metadata"]["created_by_client"] == "python-sdk"
+
+
+    @respx.mock
+    def test_create_attaches_default_document_metadata(
+        self,
+        sync_client: Any,
+    ) -> None:
+        """Job create always sends official-client telemetry metadata."""
+        from knowhere._version import __version__
+
+        response_body: Dict[str, Any] = {
+            "job_id": "job_meta_defaults",
+            "status": "pending",
+            "source_type": "url",
+            "document_id": "doc_planned",
+        }
+        route = respx.post(JOBS_URL).mock(return_value=httpx.Response(200, json=response_body))
+
+        job = sync_client.jobs.create(
+            source_type="url",
+            source_url="https://example.com/doc.pdf",
+        )
+
+        body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert body["document_metadata"] == {
+            "created_by_client": "python-sdk",
+            "client_version": __version__,
+        }
+        assert job.document_id == "doc_planned"
+
+    @respx.mock
+    def test_create_lets_caller_document_metadata_win(
+        self,
+        sync_client: Any,
+    ) -> None:
+        """Caller metadata keys override official defaults."""
+        from knowhere._version import __version__
+
+        response_body: Dict[str, Any] = {
+            "job_id": "job_meta_override",
+            "status": "pending",
+            "source_type": "url",
+        }
+        route = respx.post(JOBS_URL).mock(return_value=httpx.Response(200, json=response_body))
+
+        sync_client.jobs.create(
+            source_type="url",
+            source_url="https://example.com/doc.pdf",
+            document_metadata={
+                "created_by_client": "cli",
+                "title": "Report.pdf",
+            },
+        )
+
+        body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert body["document_metadata"] == {
+            "created_by_client": "cli",
+            "client_version": __version__,
+            "title": "Report.pdf",
+        }
 
 
 # ---------------------------------------------------------------------------

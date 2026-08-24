@@ -23,7 +23,7 @@ from knowhere.resources.documents import AsyncDocuments, Documents
 from knowhere.resources.jobs import AsyncJobs, Jobs
 from knowhere.resources.retrieval import AsyncRetrieval, Retrieval
 from knowhere.types.job import Job, JobResult
-from knowhere.types.params import LLMConfig, ParsingParams, WebhookConfig
+from knowhere.types.params import DocumentMetadata, LLMConfig, ParsingParams, WebhookConfig
 from knowhere.types.result import ParseResult
 
 _logger = getLogger()
@@ -67,6 +67,7 @@ class Knowhere(SyncAPIClient):
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
         llm_config: Optional[LLMConfig] = ...,
+        document_metadata: Optional[DocumentMetadata] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -86,6 +87,7 @@ class Knowhere(SyncAPIClient):
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
         llm_config: Optional[LLMConfig] = ...,
+        document_metadata: Optional[DocumentMetadata] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -105,6 +107,7 @@ class Knowhere(SyncAPIClient):
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
         llm_config: Optional[LLMConfig] = None,
+        document_metadata: Optional[DocumentMetadata] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         poll_timeout: float = DEFAULT_POLL_TIMEOUT,
         verify_checksum: bool = True,
@@ -131,6 +134,7 @@ class Knowhere(SyncAPIClient):
                 parsing_params=parsing_params,
                 webhook=webhook,
                 llm_config=llm_config,
+                document_metadata=document_metadata,
             )
         else:
             resolved_name: Optional[str] = file_name
@@ -145,6 +149,7 @@ class Knowhere(SyncAPIClient):
                 parsing_params=parsing_params,
                 webhook=webhook,
                 llm_config=llm_config,
+                document_metadata=document_metadata,
             )
             assert file is not None
             self.jobs.upload(job, file, on_progress=on_upload_progress)
@@ -200,6 +205,7 @@ class AsyncKnowhere(AsyncAPIClient):
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
         llm_config: Optional[LLMConfig] = ...,
+        document_metadata: Optional[DocumentMetadata] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -219,6 +225,7 @@ class AsyncKnowhere(AsyncAPIClient):
         parsing_params: Optional[ParsingParams] = ...,
         webhook: Optional[WebhookConfig] = ...,
         llm_config: Optional[LLMConfig] = ...,
+        document_metadata: Optional[DocumentMetadata] = ...,
         poll_interval: float = ...,
         poll_timeout: float = ...,
         verify_checksum: bool = ...,
@@ -238,6 +245,7 @@ class AsyncKnowhere(AsyncAPIClient):
         parsing_params: Optional[ParsingParams] = None,
         webhook: Optional[WebhookConfig] = None,
         llm_config: Optional[LLMConfig] = None,
+        document_metadata: Optional[DocumentMetadata] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         poll_timeout: float = DEFAULT_POLL_TIMEOUT,
         verify_checksum: bool = True,
@@ -260,6 +268,7 @@ class AsyncKnowhere(AsyncAPIClient):
                 parsing_params=parsing_params,
                 webhook=webhook,
                 llm_config=llm_config,
+                document_metadata=document_metadata,
             )
         else:
             resolved_name: Optional[str] = file_name
@@ -274,6 +283,7 @@ class AsyncKnowhere(AsyncAPIClient):
                 parsing_params=parsing_params,
                 webhook=webhook,
                 llm_config=llm_config,
+                document_metadata=document_metadata,
             )
             assert file is not None
             await self.jobs.upload(job, file, on_progress=on_upload_progress)

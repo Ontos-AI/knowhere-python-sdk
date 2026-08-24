@@ -16,6 +16,7 @@ class Document(BaseModel):
     status: str
     current_job_result_id: Optional[str] = None
     source_file_name: Optional[str] = None
+    document_metadata: Optional[Dict[str, Any]] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     archived_at: Optional[datetime] = None
@@ -104,3 +105,17 @@ class DocumentChunkResponse(BaseModel):
     job_result_id: Optional[str] = None
     job_id: Optional[str] = None
     chunk: DocumentChunk
+
+
+class DocumentPageCitationSource(BaseModel):
+    """Response from ``GET /v2/documents/{document_id}/files/page-citation-source``."""
+
+    document_id: str
+    namespace: Optional[str] = None
+    job_id: Optional[str] = None
+    job_result_id: Optional[str] = None
+    variant: Optional[str] = None
+    file_name: str
+    content_type: str
+    url: str
+    expires_at: Optional[datetime] = None

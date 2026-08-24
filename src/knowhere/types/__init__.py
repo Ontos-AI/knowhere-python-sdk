@@ -11,24 +11,22 @@ from knowhere.types.document import (
     DocumentChunkType,
     DocumentListPagination,
     DocumentListResponse,
+    DocumentPageCitationSource,
 )
 from knowhere.types.job import Job, JobError, JobResult
+from knowhere.types.page_citation import (
+    PAGE_CITATION_ASSETS_METADATA_KEY,
+    PageCitationAsset,
+    PageCitationAssetContentType,
+    PageCitationAssetSource,
+)
 from knowhere.types.params import (
+    DocumentMetadata,
     LLMConfig,
     LLMModelsConfig,
     LLMProviderConfig,
     ParsingParams,
     WebhookConfig,
-)
-from knowhere.types.retrieval import (
-    RetrievalChannel,
-    RetrievalChunkType,
-    RetrievalFilterMode,
-    RetrievalReferencedChunk,
-    RetrievalSectionExclusion,
-    RetrievalSource,
-    RetrievalQueryResponse,
-    RetrievalResult,
 )
 from knowhere.types.result import (
     BaseChunk,
@@ -49,6 +47,16 @@ from knowhere.types.result import (
     TableFileInfo,
     TextChunk,
 )
+from knowhere.types.retrieval import (
+    RetrievalChannel,
+    RetrievalChunkType,
+    RetrievalFilterMode,
+    RetrievalQueryResponse,
+    RetrievalReferencedChunk,
+    RetrievalResult,
+    RetrievalSectionExclusion,
+    RetrievalSource,
+)
 
 __all__: list[str] = [
     # job
@@ -64,6 +72,11 @@ __all__: list[str] = [
     "DocumentChunkType",
     "DocumentListPagination",
     "DocumentListResponse",
+    "DocumentPageCitationSource",
+    "PageCitationAsset",
+    "PageCitationAssetContentType",
+    "PageCitationAssetSource",
+    "PAGE_CITATION_ASSETS_METADATA_KEY",
     # retrieval
     "RetrievalChannel",
     "RetrievalChunkType",
@@ -74,6 +87,7 @@ __all__: list[str] = [
     "RetrievalQueryResponse",
     "RetrievalResult",
     # params
+    "DocumentMetadata",
     "LLMConfig",
     "LLMModelsConfig",
     "LLMProviderConfig",

@@ -6,7 +6,9 @@ import os
 from typing import Any
 from unittest.mock import patch
 
+import httpx
 import pytest
+import respx
 
 from knowhere._exceptions import ValidationError
 
@@ -16,6 +18,8 @@ from knowhere._constants import (
     DEFAULT_TIMEOUT,
     DEFAULT_UPLOAD_TIMEOUT,
 )
+
+from tests.conftest import BASE_URL
 
 
 # ---------------------------------------------------------------------------
@@ -130,8 +134,68 @@ class TestKnowhereClient:
         documents: Any = client.documents
         assert hasattr(documents, "list")
         assert hasattr(documents, "get")
+        assert hasattr(documents, "get_page_citation_source")
         assert hasattr(documents, "archive")
         client.close()
+
+    def test_constructor_accepts_auth_token_provider(self) -> None:
+        from knowhere import Knowhere
+
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("KNOWHERE_API_KEY", None)
+            client: Knowhere = Knowhere(auth_token_provider=lambda: "jwt_test")
+            assert client.api_key is None
+            client.close()
+
+    def test_api_key_wins_over_auth_token_provider(self) -> None:
+        from knowhere import Knowhere
+
+        client: Knowhere = Knowhere(
+            api_key="sk_static",
+            auth_token_provider=lambda: "jwt_ignored",
+        )
+        assert client.api_key == "sk_static"
+        client.close()
+
+    @respx.mock
+    def test_auth_token_provider_is_called_per_request(self) -> None:
+        from knowhere import Knowhere
+
+        tokens = iter(["jwt_one", "jwt_two"])
+        route = respx.get(f"{BASE_URL}/v2/jobs/job_1").mock(
+            return_value=httpx.Response(
+                200,
+                json={"job_id": "job_1", "status": "done", "source_type": "url"},
+            )
+        )
+
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("KNOWHERE_API_KEY", None)
+            client = Knowhere(
+                auth_token_provider=lambda: next(tokens),
+                base_url=BASE_URL,
+            )
+            try:
+                client.jobs.get("job_1")
+                client.jobs.get("job_1")
+            finally:
+                client.close()
+
+        assert route.call_count == 2
+        assert route.calls[0].request.headers["Authorization"] == "Bearer jwt_one"
+        assert route.calls[1].request.headers["Authorization"] == "Bearer jwt_two"
+
+    def test_empty_auth_token_provider_raises_validation_error(self) -> None:
+        from knowhere import Knowhere
+
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("KNOWHERE_API_KEY", None)
+            client = Knowhere(auth_token_provider=lambda: "", base_url=BASE_URL)
+            try:
+                with pytest.raises(ValidationError, match="empty token"):
+                    client.jobs.get("job_1")
+            finally:
+                client.close()
 
     def test_base_url_trailing_slash_stripped(self) -> None:
         from knowhere import Knowhere
@@ -233,4 +297,34 @@ class TestAsyncKnowhereClient:
         documents: Any = client.documents
         assert hasattr(documents, "list")
         assert hasattr(documents, "get")
+        assert hasattr(documents, "get_page_citation_source")
         assert hasattr(documents, "archive")
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_async_auth_token_provider(self) -> None:
+        from knowhere import AsyncKnowhere
+
+        async def provide_token() -> str:
+            return "jwt_async"
+
+        route = respx.get(f"{BASE_URL}/v2/jobs/job_1").mock(
+            return_value=httpx.Response(
+                200,
+                json={"job_id": "job_1", "status": "done", "source_type": "url"},
+            )
+        )
+
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("KNOWHERE_API_KEY", None)
+            client = AsyncKnowhere(
+                auth_token_provider=provide_token,
+                base_url=BASE_URL,
+            )
+            try:
+                await client.jobs.get("job_1")
+            finally:
+                await client.close()
+
+        assert route.called
+        assert route.calls[0].request.headers["Authorization"] == "Bearer jwt_async"

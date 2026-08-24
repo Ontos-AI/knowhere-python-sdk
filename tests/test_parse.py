@@ -151,6 +151,53 @@ class TestParseWithUrl:
         body: Dict[str, Any] = json.loads(create_route.calls[0].request.read())
         assert body["llm_config"] == llm_config
 
+    @respx.mock
+    def test_parse_url_forwards_document_metadata(
+        self,
+        sync_client: Any,
+        sample_zip_bytes: bytes,
+    ) -> None:
+        """parse() threads document_metadata into jobs.create POST body."""
+        import json
+
+        from knowhere._version import __version__
+
+        job_id: str = "job_meta_parse"
+        result_url: str = "https://storage.example.com/result.zip"
+        create_route = respx.post(JOBS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json=_make_create_response(job_id, "url"),
+            )
+        )
+        respx.get(f"{JOBS_URL}/{job_id}").mock(
+            return_value=httpx.Response(
+                200,
+                json=_make_done_response(job_id, result_url),
+            )
+        )
+        respx.get(result_url).mock(
+            return_value=httpx.Response(
+                200,
+                content=sample_zip_bytes,
+                headers={"Content-Type": "application/zip"},
+            )
+        )
+
+        sync_client.parse(
+            url="https://example.com/doc.pdf",
+            document_metadata={"title": "Report.pdf"},
+            poll_interval=0.01,
+            verify_checksum=False,
+        )
+
+        body: Dict[str, Any] = json.loads(create_route.calls[0].request.read())
+        assert body["document_metadata"] == {
+            "created_by_client": "python-sdk",
+            "client_version": __version__,
+            "title": "Report.pdf",
+        }
+
 
 # ---------------------------------------------------------------------------
 # parse(file=Path(...))

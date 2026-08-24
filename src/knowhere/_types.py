@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Union
 
 from typing_extensions import TypeAlias
 
@@ -54,3 +54,6 @@ UploadProgressCallback: TypeAlias = Callable[[int, Union[int, None]], None]
 # Poll progress: (current_job_result, elapsed_seconds)
 # We use a string forward-ref to avoid a circular import with types.job
 PollProgressCallback: TypeAlias = Callable[["JobResult", float], None]
+
+# Bearer token provider: sync str, or async str for AsyncKnowhere
+AuthTokenProvider: TypeAlias = Callable[[], Union[str, Awaitable[str]]]
