@@ -105,6 +105,7 @@ class TestRetrievalQuery:
             rerank=True,
             threshold=0.2,
             internal_recall_k=25,
+            include_document_ids=["doc_123", "doc_old"],
             exclude_document_ids=["doc_old"],
             exclude_sections=[
                 {
@@ -128,6 +129,7 @@ class TestRetrievalQuery:
             "rerank": True,
             "threshold": 0.2,
             "internal_recall_k": 25,
+            "include_document_ids": ["doc_123", "doc_old"],
             "exclude_document_ids": ["doc_old"],
             "exclude_sections": [
                 {
@@ -239,6 +241,27 @@ class TestRetrievalQuery:
 
         request_body: Dict[str, Any] = json.loads(route.calls[0].request.read())
         assert request_body == {"query": "refund policy"}
+        assert "include_document_ids" not in request_body
+        assert "exclude_document_ids" not in request_body
+
+    @respx.mock
+    def test_query_preserves_empty_document_scope_arrays(self, sync_client: Any) -> None:
+        route = respx.post(RETRIEVAL_QUERY_URL).mock(
+            return_value=httpx.Response(200, json=_make_retrieval_response())
+        )
+
+        sync_client.retrieval.query(
+            query="refund policy",
+            include_document_ids=[],
+            exclude_document_ids=[],
+        )
+
+        request_body: Dict[str, Any] = json.loads(route.calls[0].request.read())
+        assert request_body == {
+            "query": "refund policy",
+            "include_document_ids": [],
+            "exclude_document_ids": [],
+        }
 
     @respx.mock
     @pytest.mark.asyncio

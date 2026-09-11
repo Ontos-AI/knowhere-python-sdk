@@ -585,15 +585,18 @@ result.source.source_file_name
 result.source.section_path
 ```
 
-### Exclude documents or sections
+### Limit or exclude documents or sections
 
-Use exclusions for follow-up queries that should avoid already-used context.
+Use `include_document_ids` to search only the supplied documents for this
+request. Omit it to leave documents unrestricted by inclusion; pass `[]` to
+match no documents. Exclusions take precedence over inclusions.
 
 ```python
 response = client.retrieval.query(
     namespace="support-center",
     query="battery charging",
     top_k=10,
+    include_document_ids=["doc_123", "doc_old"],
     exclude_document_ids=["doc_old"],
     exclude_sections=[
         {"document_id": "doc_123", "section_path": "Appendix / Legal"}
