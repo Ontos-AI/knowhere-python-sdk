@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v2.0.0...v2.1.0) (2026-09-11)
+
+
+### Features
+
+* **retrieval:** add include_document_ids to query ([9d4437a](https://github.com/Ontos-AI/knowhere-python-sdk/commit/9d4437ae41aaba859aeba47caa52e74129401fdd))
+* **retrieval:** add include_document_ids to query ([4b567f4](https://github.com/Ontos-AI/knowhere-python-sdk/commit/4b567f4e5015cfc777b88290d7f4ef3b70f07637))
+
 ## [2.0.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v0.6.0...v2.0.0) (2026-08-24)
 
 
