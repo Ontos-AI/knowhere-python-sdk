@@ -34,6 +34,7 @@ class Retrieval(SyncAPIResource):
         rerank: Optional[bool] = None,
         threshold: Optional[float] = None,
         internal_recall_k: Optional[int] = None,
+        include_document_ids: Optional[list[str]] = None,
         exclude_document_ids: Optional[list[str]] = None,
         exclude_sections: Optional[list[RetrievalSectionExclusion]] = None,
         llm_config: Optional[LLMConfig] = None,
@@ -64,6 +65,8 @@ class Retrieval(SyncAPIResource):
             body["threshold"] = threshold
         if internal_recall_k is not None:
             body["internal_recall_k"] = internal_recall_k
+        if include_document_ids is not None:
+            body["include_document_ids"] = include_document_ids
         if exclude_document_ids is not None:
             body["exclude_document_ids"] = exclude_document_ids
         if exclude_sections is not None:
@@ -98,6 +101,7 @@ class AsyncRetrieval(AsyncAPIResource):
         rerank: Optional[bool] = None,
         threshold: Optional[float] = None,
         internal_recall_k: Optional[int] = None,
+        include_document_ids: Optional[list[str]] = None,
         exclude_document_ids: Optional[list[str]] = None,
         exclude_sections: Optional[list[RetrievalSectionExclusion]] = None,
         llm_config: Optional[LLMConfig] = None,
@@ -128,6 +132,8 @@ class AsyncRetrieval(AsyncAPIResource):
             body["threshold"] = threshold
         if internal_recall_k is not None:
             body["internal_recall_k"] = internal_recall_k
+        if include_document_ids is not None:
+            body["include_document_ids"] = include_document_ids
         if exclude_document_ids is not None:
             body["exclude_document_ids"] = exclude_document_ids
         if exclude_sections is not None:

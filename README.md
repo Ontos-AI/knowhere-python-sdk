@@ -142,13 +142,15 @@ for document in documents.documents:
 print(documents.pagination.total_pages)
 ```
 
-Retrieval supports exclusions when clients want follow-up results that avoid
-previously used documents or sections:
+Retrieval can limit documents for one request and exclude documents or sections.
+Omitting `include_document_ids` leaves documents unrestricted by inclusion;
+passing `[]` matches no documents. Exclusions take precedence over inclusions.
 
 ```python
 response = client.retrieval.query(
     namespace="support-center",
     query="battery charging",
+    include_document_ids=["doc_123", "doc_old"],
     exclude_document_ids=["doc_old"],
     exclude_sections=[
         {"document_id": "doc_123", "section_path": "Appendix / Legal"}
