@@ -21,6 +21,17 @@ def _make_retrieval_response() -> Dict[str, Any]:
         "query": "refund policy",
         "router_used": "discovery+agent",
         "answer_text": "Annual plans may be refunded within 30 days of purchase.",
+        "evidence": [
+            {
+                "type": "text",
+                "text": "Annual plans may be refunded within 30 days.",
+            },
+            {
+                "type": "image",
+                "media_type": "image/png",
+                "data": "abc",
+            },
+        ],
         "evidence_text": "Rendered retrieval evidence",
         "stop_reason": "answer_done",
         "failure_reason": "insufficient evidence",
@@ -147,6 +158,11 @@ class TestRetrievalQuery:
         assert response.answer_text == ("Annual plans may be refunded within 30 days of purchase.")
         assert len(response.referenced_chunks) == 1
         assert response.evidence_text == "Rendered retrieval evidence"
+        assert response.evidence[0].type == "text"
+        assert response.evidence[0].text == "Annual plans may be refunded within 30 days."
+        assert response.evidence[1].type == "image"
+        assert response.evidence[1].media_type == "image/png"
+        assert not hasattr(response.results[0], "composed")
         assert response.stop_reason == "answer_done"
         assert response.failure_reason == "insufficient evidence"
         assert response.referenced_chunks[0].chunk_id == "chunk_001"
@@ -329,6 +345,8 @@ class TestRetrievalQuery:
         assert response.referenced_chunks[0].job_id == "job_123"
         assert response.referenced_chunks[0].asset_url == ("https://example.com/assets/chunk_001")
         assert response.evidence_text == "Rendered retrieval evidence"
+        assert response.evidence[1].media_type == "image/png"
+        assert not hasattr(response.results[0], "composed")
         assert response.stop_reason == "answer_done"
         assert response.failure_reason == "insufficient evidence"
         assert response.decision_trace is not None
@@ -346,5 +364,7 @@ class TestRetrievalQuery:
         response = sync_client.retrieval.query(query="refund policy")
 
         assert response.answer_text is None
+        assert response.evidence == []
+        assert not hasattr(response.results[0], "composed")
         assert response.referenced_chunks == []
         assert response.decision_trace is None
