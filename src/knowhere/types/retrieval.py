@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, TypedDict
+from typing import Annotated, Any, Literal, Optional, TypedDict, Union
 
 from pydantic import BaseModel, Field
 
@@ -25,6 +25,23 @@ class RetrievalSource(BaseModel):
     document_id: Optional[str] = None
     source_file_name: Optional[str] = None
     section_path: Optional[str] = None
+
+
+class RetrievalTextPart(BaseModel):
+    type: Literal["text"]
+    text: str
+
+
+class RetrievalImagePart(BaseModel):
+    type: Literal["image"]
+    media_type: str
+    data: str
+
+
+RetrievalEvidencePart = Annotated[
+    Union[RetrievalTextPart, RetrievalImagePart],
+    Field(discriminator="type"),
+]
 
 
 class RetrievalResult(BaseModel):
@@ -60,9 +77,11 @@ class RetrievalReferencedChunk(BaseModel):
 class RetrievalQueryResponse(BaseModel):
     """Response from ``POST /v2/retrieval/query``.
 
-    Three PRIMARY output fields for downstream agent consumption:
+    Downstream agents consume:
 
-    - ``evidence_text``: hierarchical evidence tree for LLM context
+    - ``evidence``: composed parts (text/HTML and inline images)
+    - ``evidence_text``: text projection of those parts
+    - ``results``: raw path chunks for debug
     - ``decision_trace``: per-step navigation decisions (includes stop/failure)
     - ``referenced_chunks``: structured chunk citations for follow-up queries
     """
@@ -70,6 +89,7 @@ class RetrievalQueryResponse(BaseModel):
     namespace: str
     query: str
     router_used: str
+    evidence: list[RetrievalEvidencePart] = Field(default_factory=list)
     answer_text: Optional[str] = None
     referenced_chunks: list[RetrievalReferencedChunk] = Field(default_factory=list)
     evidence_text: Optional[str] = None

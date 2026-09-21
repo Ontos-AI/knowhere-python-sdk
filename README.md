@@ -76,6 +76,7 @@ response = client.retrieval.query(
 
 print(response.router_used)
 print(response.answer_text)
+print(response.evidence)  # composed parts to consume
 print(response.evidence_text)
 print(response.stop_reason)
 print(response.failure_reason)
@@ -84,7 +85,7 @@ for reference in response.referenced_chunks:
     print(reference.chunk_id, reference.chunk_type, reference.content_source)
     print(reference.metadata, reference.asset_url)
 
-for result in response.results:
+for result in response.results:  # raw path chunks for debug
     print(result.chunk_id, result.chunk_type, result.content_source)
     print(result.content)
     print(result.score)

@@ -541,14 +541,15 @@ response = client.retrieval.query(
 )
 print(response.answer_text)          # LLM-generated natural-language answer
 print(response.router_used)          # "workflow_single_step", "small_kb_all", etc.
-print(response.evidence_text)        # rendered evidence context, when returned
+print(response.evidence)             # composed parts to consume
+print(response.evidence_text)        # text projection of those parts
 print(response.stop_reason)          # agentic termination reason, when returned
 print(response.failure_reason)       # no-answer reason, when returned
 for ref in response.referenced_chunks:
     print(ref.chunk_id, ref.document_id, ref.chunk_type, ref.content_source)
     print(ref.section_path, ref.file_path, ref.job_id, ref.asset_url, ref.metadata)
 
-# Legacy results are always available
+# results are raw path chunks for debug
 for result in response.results:
     print(result.chunk_id)
     print(result.content)

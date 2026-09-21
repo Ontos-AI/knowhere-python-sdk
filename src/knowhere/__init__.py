@@ -87,6 +87,7 @@ from knowhere.types.result import (
 from knowhere.types.retrieval import (
     RetrievalChannel,
     RetrievalChunkType,
+    RetrievalEvidencePart,
     RetrievalFilterMode,
     RetrievalQueryResponse,
     RetrievalReferencedChunk,
@@ -149,6 +150,7 @@ __all__: list[str] = [
     "RetrievalReferencedChunk",
     "RetrievalSectionExclusion",
     "RetrievalSource",
+    "RetrievalEvidencePart",
     "RetrievalQueryResponse",
     "RetrievalResult",
     # Result types
