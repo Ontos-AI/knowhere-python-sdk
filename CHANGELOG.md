@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v2.1.0...v2.2.0) (2026-09-21)
+
+
+### Features
+
+* **retrieval:** expose composed evidence and keep raw results ([0ab65f8](https://github.com/Ontos-AI/knowhere-python-sdk/commit/0ab65f819415391d87f3837edb89af90414a9354))
+* **retrieval:** expose composed evidence and keep raw results ([b7c1db6](https://github.com/Ontos-AI/knowhere-python-sdk/commit/b7c1db6a5888dc267059254885159b989376e27f))
+
 ## [2.1.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v2.0.0...v2.1.0) (2026-09-11)
 
 
