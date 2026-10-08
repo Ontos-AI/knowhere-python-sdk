@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.1](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v2.2.0...v2.2.1) (2026-10-08)
+
+
+### Documentation
+
+* **retrieval:** mark evidence_text as deprecated and always empty ([3e1b7e2](https://github.com/Ontos-AI/knowhere-python-sdk/commit/3e1b7e2ca561c4098e7a319b960cc853ea0ef491))
+* **retrieval:** mark evidence_text as deprecated and always empty ([58507da](https://github.com/Ontos-AI/knowhere-python-sdk/commit/58507dae5c04caea0dbce729e1387529d6fe2936))
+
 ## [2.2.0](https://github.com/Ontos-AI/knowhere-python-sdk/compare/v2.1.0...v2.2.0) (2026-09-21)
 
 
