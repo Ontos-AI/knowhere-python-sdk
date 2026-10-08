@@ -541,8 +541,8 @@ response = client.retrieval.query(
 )
 print(response.answer_text)          # LLM-generated natural-language answer
 print(response.router_used)          # "workflow_single_step", "small_kb_all", etc.
-print(response.evidence)             # composed parts to consume
-print(response.evidence_text)        # text projection of those parts
+print(response.evidence)             # grouped [E n] parts to consume
+print(response.evidence_text)        # deprecated; always empty. Use evidence.
 print(response.stop_reason)          # agentic termination reason, when returned
 print(response.failure_reason)       # no-answer reason, when returned
 for ref in response.referenced_chunks:

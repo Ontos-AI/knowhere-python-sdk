@@ -79,8 +79,8 @@ class RetrievalQueryResponse(BaseModel):
 
     Downstream agents consume:
 
-    - ``evidence``: composed parts (text/HTML and inline images)
-    - ``evidence_text``: text projection of those parts
+    - ``evidence``: grouped ``[E n]`` parts (text/HTML and inline images)
+    - ``evidence_text``: deprecated; always empty. Use ``evidence``.
     - ``results``: raw path chunks for debug
     - ``decision_trace``: per-step navigation decisions (includes stop/failure)
     - ``referenced_chunks``: structured chunk citations for follow-up queries
