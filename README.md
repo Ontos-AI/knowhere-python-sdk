@@ -76,8 +76,8 @@ response = client.retrieval.query(
 
 print(response.router_used)
 print(response.answer_text)
-print(response.evidence)  # composed parts to consume
-print(response.evidence_text)
+print(response.evidence)  # grouped [E n] parts to consume
+print(response.evidence_text)  # deprecated; always empty. Use evidence.
 print(response.stop_reason)
 print(response.failure_reason)
 
