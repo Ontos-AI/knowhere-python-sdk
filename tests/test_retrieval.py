@@ -368,3 +368,26 @@ class TestRetrievalQuery:
         assert not hasattr(response.results[0], "composed")
         assert response.referenced_chunks == []
         assert response.decision_trace is None
+
+
+def test_media_citations_keep_time_ranges() -> None:
+    from knowhere.types.retrieval import RetrievalQueryResponse, TimeRange
+
+    payload = _make_retrieval_response()
+    span = {"start_ms": 723_000, "end_ms": 860_000}
+    payload["results"][0]["source"]["time_ranges"] = [span]
+    payload["referenced_chunks"][0]["time_ranges"] = [span]
+
+    response = RetrievalQueryResponse.model_validate(payload)
+
+    assert response.results[0].source.time_ranges == [TimeRange(**span)]
+    assert response.referenced_chunks[0].time_ranges == [TimeRange(**span)]
+
+
+def test_document_citations_have_no_time_ranges() -> None:
+    from knowhere.types.retrieval import RetrievalQueryResponse
+
+    response = RetrievalQueryResponse.model_validate(_make_retrieval_response())
+
+    assert response.results[0].source.time_ranges is None
+    assert response.referenced_chunks[0].time_ranges is None

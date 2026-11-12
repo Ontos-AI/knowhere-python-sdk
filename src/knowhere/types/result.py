@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 from knowhere._exceptions import ValidationError
+from knowhere.types.retrieval import TimeRange
 
 
 # ---------------------------------------------------------------------------
@@ -203,6 +204,11 @@ class ChunkMetadata(BaseModel):
     original_name: Optional[str] = None
     table_type: Optional[str] = None
     document_top_summary: Optional[str] = None
+    # Audio/video transcript chunks.
+    time_ranges: Optional[List[TimeRange]] = None
+    speakers: Optional[List[str]] = None
+    media: Optional[Dict[str, Any]] = None
+    source_kind: Optional[str] = None
 
 
 class BaseChunk(BaseModel):
