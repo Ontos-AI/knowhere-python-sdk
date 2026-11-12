@@ -19,12 +19,20 @@ class RetrievalSectionExclusion(TypedDict):
     section_path: str
 
 
+class TimeRange(BaseModel):
+    """Audio/video time span in milliseconds from the start of the recording."""
+
+    start_ms: int
+    end_ms: int
+
+
 class RetrievalSource(BaseModel):
     """Caller-facing source reference attached to a retrieval result."""
 
     document_id: Optional[str] = None
     source_file_name: Optional[str] = None
     section_path: Optional[str] = None
+    time_ranges: Optional[list[TimeRange]] = None
 
 
 class RetrievalTextPart(BaseModel):
@@ -71,6 +79,7 @@ class RetrievalReferencedChunk(BaseModel):
     file_path: Optional[str] = None
     job_id: Optional[str] = None
     asset_url: Optional[str] = None
+    time_ranges: Optional[list[TimeRange]] = None
     metadata: Optional[dict[str, Any]] = None
 
 

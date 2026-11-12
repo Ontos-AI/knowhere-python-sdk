@@ -316,6 +316,10 @@ for chunk in result.text_chunks:
         print(f"  Summary: {summary}")
 ```
 
+Audio and video transcripts are text chunks with speaker-labelled lines
+(`S1: ...`). Their metadata adds `time_ranges` (milliseconds), `speakers`,
+`media` (`kind`, `duration_ms`) and `source_kind` (`"asr"`).
+
 ### ImageChunk
 
 | Field | Type | Description |
@@ -548,6 +552,7 @@ print(response.failure_reason)       # no-answer reason, when returned
 for ref in response.referenced_chunks:
     print(ref.chunk_id, ref.document_id, ref.chunk_type, ref.content_source)
     print(ref.section_path, ref.file_path, ref.job_id, ref.asset_url, ref.metadata)
+    print(ref.time_ranges)           # audio/video only: [TimeRange(start_ms, end_ms)]
 
 # results are raw path chunks for debug
 for result in response.results:
@@ -584,6 +589,16 @@ result.metadata   # Optional[dict]
 result.source.document_id
 result.source.source_file_name
 result.source.section_path
+result.source.time_ranges  # Optional[list[TimeRange]], audio/video only
+```
+
+Audio and video documents are speech transcripts. Their citations carry
+`time_ranges` in milliseconds, so you can seek the recording:
+
+```python
+for ref in response.referenced_chunks:
+    for span in ref.time_ranges or []:
+        print(f"{ref.section_path} @ {span.start_ms / 1000:.0f}s-{span.end_ms / 1000:.0f}s")
 ```
 
 ### Limit or exclude documents or sections
@@ -925,10 +940,12 @@ At `DEBUG` level, the SDK logs every HTTP request and response (with API keys re
 | Category | Extensions |
 |----------|-----------|
 | Documents | `.doc`, `.docx`, `.pdf`, `.txt` |
-| Spreadsheets | `.xls`, `.xlsx`, `.csv` |
-| Images | `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.tiff`, `.svg` |
-| Presentations | `.ppt`, `.pptx` |
-| Markdown | `.md` |
+| Spreadsheets | `.xls`, `.xlsx`, `.csv`, `.tsv` |
+| Images | `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.bmp`, `.tif`, `.tiff`, `.heic`, `.heif` |
+| Presentations | `.pptx` |
+| Markdown and web | `.md`, `.html`, `.htm` |
+| Audio | `.mp3`, `.wav`, `.m4a`, `.aac`, `.flac`, `.ogg`, `.opus` |
+| Video (audio track only) | `.mp4`, `.mov`, `.webm`, `.mkv` |
 
 Use the `doc_type` parsing parameter to override auto-detection:
 

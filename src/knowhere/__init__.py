@@ -94,6 +94,7 @@ from knowhere.types.retrieval import (
     RetrievalResult,
     RetrievalSectionExclusion,
     RetrievalSource,
+    TimeRange,
 )
 
 __all__: list[str] = [
@@ -150,6 +151,7 @@ __all__: list[str] = [
     "RetrievalReferencedChunk",
     "RetrievalSectionExclusion",
     "RetrievalSource",
+    "TimeRange",
     "RetrievalEvidencePart",
     "RetrievalQueryResponse",
     "RetrievalResult",
